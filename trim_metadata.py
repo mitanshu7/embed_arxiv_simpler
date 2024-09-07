@@ -14,4 +14,4 @@ arxiv_metadata_all = pd.read_parquet(data_file)
 selected_columns = ['id', 'abstract']
 
 # Save to a Parquet file with only the selected columns
-arxiv_metadata_all[selected_columns].to_parquet(f"{data_folder}/arxiv-metadata-oai-snapshot-trimmed.parquet", index=False)
+arxiv_metadata_all[selected_columns].to_parquet(f"{data_folder}/arxiv-metadata-oai-snapshot-trim.parquet", index=False)

@@ -6,7 +6,7 @@ import os
 
 # Metadata file
 data_folder = 'data'
-data_file = f"{data_folder}/arxiv-metadata-oai-snapshot-trimmed.parquet"
+data_file = f"{data_folder}/arxiv-metadata-oai-snapshot-trim.parquet"
 
 # Create folder
 split_folder = f"{data_file.replace('.parquet','')}-split"

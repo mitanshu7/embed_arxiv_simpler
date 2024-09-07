@@ -13,9 +13,8 @@ start = time()
 
 # Gather split files
 data_folder = 'data'
-split_folder = f'{data_folder}/arxiv-metadata-oai-snapshot-trimmed-split'
+split_folder = f'{data_folder}/arxiv-metadata-oai-snapshot-trim-split'
 split_files = glob(f'{split_folder}/*.parquet')
-split_files.sort(reverse=True)
 
 # Create folder
 embed_folder = f"{split_folder}-embed"
