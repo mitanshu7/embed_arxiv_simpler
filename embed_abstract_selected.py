@@ -13,11 +13,13 @@ tqdm.pandas() # Progress bar for pandas
 # Track time
 start = time()
 
-# Gather split files
+# Year to embed
+year = '24'
+
+# Gather split file
 data_folder = 'data'
 split_folder = f'{data_folder}/arxiv-metadata-oai-snapshot-trim-split'
-split_files = glob(f'{split_folder}/*.parquet')
-print(f"Found {len(split_files)} split files")
+split_file = f'{split_folder}/{year}.parquet'
 
 # Create folder
 embed_folder = f"{split_folder}-embed"
@@ -43,32 +45,32 @@ def embed(input_text):
 
 ################################################################################
 
-for split_file in split_files:
 
-    print('#'*80)
 
-    # Track time
-    tic = time()
+print('#'*80)
 
-    # Load metadata
-    print(f"Loading metadata file: {split_file}")   
-    arxiv_metadata_trimmed_split = pd.read_parquet(split_file)
+# Track time
+tic = time()
 
-    # Create a column for embeddings
-    print(f"Creating embeddings for: {len(arxiv_metadata_trimmed_split)} entries")
-    arxiv_metadata_trimmed_split["vector"] = arxiv_metadata_trimmed_split["abstract"].progress_apply(embed)
+# Load metadata
+print(f"Loading metadata file: {split_file}")   
+arxiv_metadata_trimmed_split = pd.read_parquet(split_file)
 
-    # Selecting id and vector to retain
-    selected_columns = ['id', 'vector']
+# Create a column for embeddings
+print(f"Creating embeddings for: {len(arxiv_metadata_trimmed_split)} entries")
+arxiv_metadata_trimmed_split["vector"] = arxiv_metadata_trimmed_split["abstract"].progress_apply(embed)
 
-    # Save the embedded file
-    embed_filename = f'{embed_folder}/{os.path.basename(split_file)}'
-    print(f"Saving embedded dataframe to: {embed_filename}")
-    arxiv_metadata_trimmed_split[selected_columns].to_parquet(embed_filename)
+# Selecting id and vector to retain
+selected_columns = ['id', 'vector']
 
-    # Track time
-    toc = time()
-    print(f"Processed in: {(toc-tic)/60} minutes")
+# Save the embedded file
+embed_filename = f'{embed_folder}/{os.path.basename(split_file)}'
+print(f"Saving embedded dataframe to: {embed_filename}")
+arxiv_metadata_trimmed_split[selected_columns].to_parquet(embed_filename)
+
+# Track time
+toc = time()
+print(f"Processed in: {(toc-tic)/60} minutes")
     
 
 ################################################################################
