@@ -14,7 +14,7 @@ print(user)
 
 # Setup transaction details
 ## CHANGE BELOW LINE ##
-folder_path = "data/arxiv-metadata-oai-snapshot-trim-split-embed" # Which folder to upload
+folder_path = "embeddings_data/data_with_metadata" # Which folder to upload
 repo_id = "bluuebunny/arxiv_abstract_embedding_mxbai_large_v1_milvus"  # Which repository to upload to
 subfolder = "data"  # Optional subfolder within the repository
 
