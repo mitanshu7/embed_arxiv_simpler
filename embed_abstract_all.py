@@ -45,6 +45,7 @@ def embed(input_text):
 
 ################################################################################
 
+# Loop through each split file
 for split_file in split_files:
 
     print('#'*80)
@@ -75,7 +76,9 @@ for split_file in split_files:
     # Save the embedded file
     embed_filename = f'{embed_folder}/{os.path.basename(split_file)}'
     print(f"Saving embedded dataframe to: {embed_filename}")
-    arxiv_metadata_split[selected_columns].to_parquet(embed_filename)
+    # Keeping index=False to avoid saving the index column as a separate column in the parquet file
+    # This keeps milvus from throwing an error when importing the parquet file
+    arxiv_metadata_split[selected_columns].to_parquet(embed_filename, index=False)
 
     # Track time
     toc = time()

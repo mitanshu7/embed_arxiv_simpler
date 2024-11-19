@@ -99,7 +99,9 @@ new_embeddings = pd.concat([previous_embeddings, new_papers[selected_columns]])
 # Save the embedded file
 embed_filename = f'{embed_folder}/{year}.parquet'
 print(f"Saving newly embedded dataframe to: {embed_filename}")
-new_embeddings.to_parquet(embed_filename)
+# Keeping index=False to avoid saving the index column as a separate column in the parquet file
+# This keeps milvus from throwing an error when importing the parquet file
+new_embeddings.to_parquet(embed_filename, index=False)
 
 # Track time
 toc = time()
