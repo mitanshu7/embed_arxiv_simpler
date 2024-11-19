@@ -8,6 +8,7 @@
 import subprocess
 import os
 import pandas as pd
+from datasets import load_dataset 
 from time import time
 
 # Track time
@@ -16,7 +17,7 @@ start_time = time()
 ################################################################################
 
 # Flag to force download and conversion even if files already exist
-FORCE = False
+FORCE = True
 
 ################################################################################
 # Download the dataset
@@ -47,8 +48,9 @@ else:
 ################################################################################
 # Convert to parquet
 
+# https://www.kaggle.com/code/daquarti/reading-jsonl-data-using-huggingface-datasets
 # Load metadata
-arxiv_metadata_all = pd.read_json(download_file, lines=True, convert_dates=True)
+dataset = load_dataset("json", data_files= str(f"{download_file}"))
 
 # Parquet file name
 parquet_file = f'{download_folder}/arxiv-metadata-oai-snapshot.parquet'
@@ -59,7 +61,7 @@ if not os.path.exists(parquet_file) or FORCE:
     print(f'Converting {download_file} to parquet')
 
     # Save to parquet format
-    arxiv_metadata_all.to_parquet(parquet_file, index=False)
+    dataset['train'].to_parquet(f"{parquet_file}")
     
     print(f'Saved {parquet_file}')
 
@@ -70,6 +72,9 @@ else:
 
 ################################################################################
 # Split metadata by year
+
+# Load metadata
+arxiv_metadata_all = pd.read_parquet(parquet_file)
 
 # Create folder
 split_folder = f"{parquet_file.replace('.parquet','-split')}"

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project involves downloading metadata from ArXiv and generating vector embeddings for the articles using an embedding model. 
+This project involves downloading metadata from ArXiv and generating vector embeddings for the articles using an embedding model. The generated embeddings are compatible with [Milvus](https://milvus.io/).
 
 Please find a copy of embeddings dataset on [HuggingFace](https://huggingface.co/datasets/bluuebunny/arxiv_abstract_embedding_mxbai_large_v1_milvus) generated using model [mxbai-embed-large-v1](https://huggingface.co/mixedbread-ai/mxbai-embed-large-v1).
 
