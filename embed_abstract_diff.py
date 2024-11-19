@@ -3,7 +3,8 @@ from sentence_transformers import SentenceTransformer # For embedding the text
 import torch # For gpu 
 import pandas as pd # Data manipulation
 from time import time # Track time taken
-from glob import glob # Gather files
+from huggingface_hub import snapshot_download # Download previous embeddings
+import json # To make milvus compatible $meta
 import os # Folder and file creation
 from tqdm import tqdm # Progress bar
 tqdm.pandas() # Progress bar for pandas
@@ -16,16 +17,27 @@ start = time()
 # Year to diff embed
 year = '24'
 
+# Setup transaction details
 repo_id = "bluuebunny/arxiv_abstract_embedding_mxbai_large_v1_milvus"
+repo_type = "dataset"
+local_dir = repo_id
+allow_patterns = f"data/{year}.parquet"
 
+# Create local directory
+os.makedirs(local_dir, exist_ok=True)
+
+# Download the repo
+snapshot_download(repo_id=repo_id, repo_type=repo_type, local_dir=local_dir, allow_patterns=allow_patterns)
+
+# Gather previous embed file
+previous_embed = f'{repo_id}/data/{year}.parquet'
 
 # Gather split file
 data_folder = 'data'
-split_folder = f'{data_folder}/arxiv-metadata-oai-snapshot-trim-split'
+split_folder = f'{data_folder}/arxiv-metadata-oai-snapshot-split'
 split_file = f'{split_folder}/{year}.parquet'
-previous_embed = f'{repo_id}/data/{year}.parquet'
 
-# Create folder
+# Create embed folder
 embed_folder = f"{split_folder}-diff-embed"
 os.makedirs(embed_folder, exist_ok=True)
 
@@ -56,36 +68,38 @@ tic = time()
 
 # Load metadata
 print(f"Loading metadata file: {split_file}")   
-arxiv_metadata_trimmed_split = pd.read_parquet(split_file)
+arxiv_metadata_split = pd.read_parquet(split_file)
 
 # Load previous_embed
-print(f"Loading previous embed file: {previous_embed}")   
-arxiv_previous_embed = pd.read_parquet(previous_embed)
+print(f"Loading previously embedded file: {previous_embed}")   
+previous_embeddings = pd.read_parquet(previous_embed)
 
-# Merge the two dataframes on id
-diff = pd.merge(arxiv_previous_embed, arxiv_metadata_trimmed_split, how='outer', on='id')
-
-# Keep only NaN values
-diff = diff[diff.isna().any(axis=1)]
-
-# Selecting id and abstract to retain
-selected_columns = ['id', 'abstract']
-
-# Keep columns of interest
-diff = diff[selected_columns]
-
+# Find papers that are not in the previous embeddings
+new_papers = arxiv_metadata_split[~arxiv_metadata_split['id'].isin(previous_embeddings['id'])]
 
 # Create a column for embeddings
-print(f"Creating embeddings for: {len(diff)} entries")
-diff["vector"] = diff["abstract"].progress_apply(embed)
+print(f"Creating new embeddings for: {len(new_papers)} entries")
+new_papers["vector"] = new_papers["abstract"].progress_apply(embed)
 
-# Selecting id and vector to retain
-selected_columns = ['id', 'vector']
+# Rename columns
+new_papers.rename(columns={'title': 'Title', 'authors': 'Authors', 'abstract': 'Abstract'}, inplace=True)
+
+# Add URL column
+new_papers['URL'] = 'https://arxiv.org/abs/' + new_papers['id']
+
+# Create milvus compatible parquet file, $meta is a json string of the metadata
+new_papers['$meta'] = new_papers[['Title', 'Authors', 'Abstract', 'URL']].apply(lambda row: json.dumps(row.to_dict()), axis=1)
+
+# Selecting id, vector and $meta to retain
+selected_columns = ['id', 'vector', '$meta']
+
+# Merge previous embeddings and new embeddings
+new_embeddings = pd.concat([previous_embeddings, new_papers[selected_columns]])
 
 # Save the embedded file
-embed_filename = f'{embed_folder}/{os.path.basename(split_file)}'
-print(f"Saving embedded dataframe to: {embed_filename}")
-diff[selected_columns].to_parquet(embed_filename)
+embed_filename = f'{embed_folder}/{year}.parquet'
+print(f"Saving newly embedded dataframe to: {embed_filename}")
+new_embeddings.to_parquet(embed_filename)
 
 # Track time
 toc = time()

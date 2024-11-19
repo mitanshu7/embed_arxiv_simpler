@@ -1,3 +1,6 @@
 *tmp*
 *data/
 .env
+*.parquet
+*.json
+.cache

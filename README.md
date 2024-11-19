@@ -2,7 +2,9 @@
 
 ## Overview
 
-The Embed Arxiv (Simpler) is a tool designed to suggest relevant scientific articles based on the user's interests. This project involves downloading metadata from ArXiv, generating vector embeddings for the articles using an embedding model.
+This project involves downloading metadata from ArXiv and generating vector embeddings for the articles using an embedding model. 
+
+Please find a copy of embeddings dataset on [HuggingFace](https://huggingface.co/datasets/bluuebunny/arxiv_abstract_embedding_mxbai_large_v1_milvus) generated using model [mxbai-embed-large-v1](https://huggingface.co/mixedbread-ai/mxbai-embed-large-v1).
 
 ## Features
 
@@ -13,18 +15,18 @@ The Embed Arxiv (Simpler) is a tool designed to suggest relevant scientific arti
 
 ### Prerequisites
 
-Satisfy prerequisites by issuing the command for your choice of package manager
+Satisfy prerequisites by issuing this command:
 `pip install -r requirements.txt`
 
 ## Usage
 
 Run the files in the following order:
-1. `download_metadata.py` to download the arXiv metadata from kaggle.
-2. `convert_to_parquet.py` to convert json to parquet file for efficient computations.
-3. `trim_metadata.py` to only keep id and abstract in the dataframe.
-4. `split_by_year.py` to split the metadata by year.
-5. `embed_abstract.py` to embed the abstract of the papers using the `mixedbread-ai/mxbai-embed-large-v1` model.
-
+1. Download Metadata:
+- `prepare_metadata.py` to download the arXiv metadata from kaggle and split it year-wise.
+  
+2. Embed Abstract:
+- `embed_abstract_all.py` to embed the abstract of the **all** papers in metadata.
+- `embed_abstract_diff.py` to embed the abstract of the **new** papers in metadata.
+   
 ## Extras:
-1. `download_hf.py` to download repo from huggingface.co
-2. `upload_hf.py` to upload files to huggingface.co
+1. `upload_hf.py` to upload files to [huggingface.co](https://huggingface.co/)

@@ -2,6 +2,7 @@
 from sentence_transformers import SentenceTransformer # For embedding the text
 import torch # For gpu 
 import pandas as pd # Data manipulation
+import json # To make milvus compatible $meta
 from time import time # Track time taken
 from glob import glob # Gather files
 import os # Folder and file creation
@@ -15,7 +16,7 @@ start = time()
 
 # Gather split files
 data_folder = 'data'
-split_folder = f'{data_folder}/arxiv-metadata-oai-snapshot-trim-split'
+split_folder = f'{data_folder}/arxiv-metadata-oai-snapshot-split'
 split_files = glob(f'{split_folder}/*.parquet')
 print(f"Found {len(split_files)} split files")
 
@@ -27,10 +28,11 @@ os.makedirs(embed_folder, exist_ok=True)
 
 # Make the app device agnostic
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+model_name = "mixedbread-ai/mxbai-embed-large-v1"
 
 # Load a pretrained Sentence Transformer model and move it to the appropriate device
-print(f"Loading model to device: {device}")
-model = SentenceTransformer("mixedbread-ai/mxbai-embed-large-v1")
+print(f"Loading model {model_name} to device: {device}")
+model = SentenceTransformer(model_name)
 model = model.to(device)
 
 # Function that does the embedding
@@ -52,19 +54,28 @@ for split_file in split_files:
 
     # Load metadata
     print(f"Loading metadata file: {split_file}")   
-    arxiv_metadata_trimmed_split = pd.read_parquet(split_file)
+    arxiv_metadata_split = pd.read_parquet(split_file)
 
     # Create a column for embeddings
-    print(f"Creating embeddings for: {len(arxiv_metadata_trimmed_split)} entries")
-    arxiv_metadata_trimmed_split["vector"] = arxiv_metadata_trimmed_split["abstract"].progress_apply(embed)
+    print(f"Creating embeddings for: {len(arxiv_metadata_split)} entries")
+    arxiv_metadata_split["vector"] = arxiv_metadata_split["abstract"].progress_apply(embed)
 
-    # Selecting id and vector to retain
-    selected_columns = ['id', 'vector']
+    # Rename columns
+    arxiv_metadata_split.rename(columns={'title': 'Title', 'authors': 'Authors', 'abstract': 'Abstract'}, inplace=True)
+
+    # Add URL column
+    arxiv_metadata_split['URL'] = 'https://arxiv.org/abs/' + arxiv_metadata_split['id']
+
+    # Create milvus compatible parquet file, $meta is a json string of the metadata
+    arxiv_metadata_split['$meta'] = arxiv_metadata_split[['Title', 'Authors', 'Abstract', 'URL']].apply(lambda row: json.dumps(row.to_dict()), axis=1)
+    
+    # Selecting id, vector and $meta to retain
+    selected_columns = ['id', 'vector', '$meta']
 
     # Save the embedded file
     embed_filename = f'{embed_folder}/{os.path.basename(split_file)}'
     print(f"Saving embedded dataframe to: {embed_filename}")
-    arxiv_metadata_trimmed_split[selected_columns].to_parquet(embed_filename)
+    arxiv_metadata_split[selected_columns].to_parquet(embed_filename)
 
     # Track time
     toc = time()
