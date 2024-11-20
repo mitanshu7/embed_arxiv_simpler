@@ -36,3 +36,18 @@ See `.env.sample` for an example.
 2. Update existing embeddings:
 - `update_embeddings.py` to embed the abstract of the **new** papers in metadata.
    
+## Keep embeddings updated:
+1. Setup a crontab to run the script `update_embeddings.sh` every week, modify command accordingly.
+```bash
+crontab -e
+0 0 * * 2 /bin/bash /home/milvus/embed_arxiv_simpler/update_embeddings.sh >> /home/milvus/embed_arxiv_simpler/update_embeddings_crontab.log 2>&1
+crontab -l
+```
+This cron runs midnight every Tuesday.
+
+## Contributing
+Feel free to contribute to the project by submitting issues, pull requests, or suggestions. 
+## License
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+## Contact
+For any questions or feedback, please contact [mitanshu.sukhwani@gmail.com](mailto:mitanshu.sukhwani@gmail.com).
