@@ -17,7 +17,7 @@ start_time = time()
 ################################################################################
 
 # Flag to force download and conversion even if files already exist
-FORCE = True
+FORCE = False
 
 ################################################################################
 # Download the dataset
@@ -48,7 +48,7 @@ else:
 ################################################################################
 # Convert to parquet
 
-# https://www.kaggle.com/code/daquarti/reading-jsonl-data-using-huggingface-datasets
+# https://huggingface.co/docs/datasets/en/about_arrow#memory-mapping
 # Load metadata
 dataset = load_dataset("json", data_files= str(f"{download_file}"))
 
