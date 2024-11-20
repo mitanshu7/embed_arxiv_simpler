@@ -15,7 +15,6 @@ Please find a copy of embeddings dataset on [HuggingFace](https://huggingface.co
 ## Installation
 
 ### Prerequisites
-_(untested)_
 
 Satisfy prerequisites by issuing this command:
 `pip install -r requirements.txt`

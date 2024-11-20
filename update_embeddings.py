@@ -19,6 +19,7 @@ from mixedbread_ai.client import MixedbreadAI # For embedding the text
 from dotenv import dotenv_values # To load environment variables
 import numpy as np # For array manipulation
 from huggingface_hub import HfApi # To transact with huggingface.co
+import sys # To exit script when no new papers found
 
 ################################################################################
 # Configuration
@@ -178,8 +179,17 @@ previous_embeddings = pd.read_parquet(previous_embed)
 # Find papers that are not in the previous embeddings
 new_papers = arxiv_metadata_split[~arxiv_metadata_split['id'].isin(previous_embeddings['id'])]
 
+# Number of new papers
+num_new_papers = len(new_papers)
+
+# What if there are no new papers?
+if num_new_papers == 0:
+    print(f"No new papers found for year: {year}")
+    print("Exiting")
+    sys.exit()
+
 # Create a column for embeddings
-print(f"Creating new embeddings for: {len(new_papers)} entries")
+print(f"Creating new embeddings for: {num_new_papers} entries")
 new_papers["vector"] = new_papers["abstract"].progress_apply(embed)
 
 # Rename columns
@@ -208,8 +218,10 @@ new_embeddings.to_parquet(embed_filename, index=False)
 
 # Upload the new embeddings to the repo
 if UPLOAD:
+
     print(f"Uploading new embeddings to: {repo_id}")
     access_token =  config["HF_API_KEY"]
     api = HfApi(token=access_token)
+
     # Upload all files within the folder to the specified repository
     api.upload_folder(repo_id=repo_id, folder_path=embed_folder, path_in_repo=folder_in_repo, repo_type="dataset")
