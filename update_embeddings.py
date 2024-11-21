@@ -19,13 +19,18 @@ from mixedbread_ai.client import MixedbreadAI # For embedding the text
 from dotenv import dotenv_values # To load environment variables
 import numpy as np # For array manipulation
 from huggingface_hub import HfApi # To transact with huggingface.co
-import sys # To exit script when no new papers found
+import sys # To quit the script
+import datetime # get current year
+from time import time # To time the script
+
+# Start timer
+start = time()
 
 ################################################################################
 # Configuration
 
-# Year to update embeddings for
-year = '24'
+# Year to update embeddings for, get and set the current year
+year = str(datetime.datetime.now().year)[2:]
 
 # Flag to force download and conversion even if files already exist
 FORCE = True
@@ -75,7 +80,8 @@ download_file = f'{download_folder}/arxiv-metadata-oai-snapshot.json'
 ## Download the dataset if it doesn't exist
 if not os.path.exists(download_file) or FORCE:
 
-    print(f'Downloading {download_file}')
+    print(f'Downloading {download_file}, if it exists it will be overwritten')
+    print('Set FORCE to False to skip download if file already exists')
 
     subprocess.run(['kaggle', 'datasets', 'download', '--dataset', dataset_path, '--path', download_folder, '--unzip'])
     
@@ -83,8 +89,8 @@ if not os.path.exists(download_file) or FORCE:
 
 else:
 
-    print(f'{download_file} already exists')
-    print('Skipping download')
+    print(f'{download_file} already exists, skipping download')
+    print('Set FORCE = True to force download')
 
 ################################################################################
 # Filter by year and convert to parquet
@@ -92,7 +98,7 @@ else:
 # https://huggingface.co/docs/datasets/en/about_arrow#memory-mapping
 # Load metadata
 print(f"Loading json metadata")
-dataset = load_dataset("json", data_files= str(f"{download_file}"), num_proc=num_cores)
+arxiv_metadata_all = load_dataset("json", data_files= str(f"{download_file}"))
 
 ########################################
 # Function to add year to metadata
@@ -105,20 +111,24 @@ def add_year(example):
 
 # Add year to metadata
 print(f"Adding year to metadata")
-dataset = dataset.map(add_year, num_proc=num_cores)
+arxiv_metadata_all = arxiv_metadata_all.map(add_year, num_proc=num_cores)
 
 # Filter by year
 print(f"Filtering metadata by year: {year}")
-dataset = dataset.filter(lambda example: example['year'] == year, num_proc=num_cores)
+arxiv_metadata_all = arxiv_metadata_all.filter(lambda example: example['year'] == year, num_proc=num_cores)
 
 # Convert to pandas
 print(f"Loading metadata for year: {year} into pandas")
-arxiv_metadata_split = dataset['train'].to_pandas()
+arxiv_metadata_split = arxiv_metadata_all['train'].to_pandas()
 
 ################################################################################
 # Load Model
 
 if LOCAL:
+
+    print(f"Setting up local embedding model")
+    print("To use mxbai API, set LOCAL = False")
+
     # Make the app device agnostic
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
@@ -127,7 +137,8 @@ if LOCAL:
     model = SentenceTransformer(model_name)
     model = model.to(device)
 else:
-    print("Setting up mxbai client")
+    print("Setting up mxbai API client")
+    print("To use local resources, set LOCAL = True")
     # Setup mxbai
     mxbai_api_key = config["MXBAI_API_KEY"]
     mxbai = MixedbreadAI(api_key=mxbai_api_key)
@@ -166,12 +177,20 @@ os.makedirs(local_dir, exist_ok=True)
 # Download the repo
 snapshot_download(repo_id=repo_id, repo_type=repo_type, local_dir=local_dir, allow_patterns=allow_patterns)
 
-# Gather previous embed file
-previous_embed = f'{local_dir}/{folder_in_repo}/{year}.parquet'
+try:
 
-# Load previous_embed
-print(f"Loading previously embedded file: {previous_embed}")   
-previous_embeddings = pd.read_parquet(previous_embed)
+    # Gather previous embed file
+    previous_embed = f'{local_dir}/{folder_in_repo}/{year}.parquet'
+
+    # Load previous_embed
+    print(f"Loading previously embedded file: {previous_embed}")   
+    previous_embeddings = pd.read_parquet(previous_embed)
+
+except Exception as e:
+    print(f"Errored out with: {e}")
+    print(f"No previous embeddings found for year: {year}")
+    print("Creating new embeddings for all papers")
+    previous_embeddings = pd.DataFrame(columns=['id', 'vector', '$meta'])
 
 ########################################
 # Embed the new abstracts
@@ -225,3 +244,18 @@ if UPLOAD:
 
     # Upload all files within the folder to the specified repository
     api.upload_folder(repo_id=repo_id, folder_path=embed_folder, path_in_repo=folder_in_repo, repo_type="dataset")
+
+    print(f"Upload complete for year: {year}")
+
+else:
+    print("Not uploading new embeddings to the repo")
+    print("To upload new embeddings, set UPLOAD to True")
+################################################################################
+
+# Track time
+end = time()
+
+# Calculate and show time taken
+print(f"Time taken: {end - start} seconds")
+
+print("Done!")
