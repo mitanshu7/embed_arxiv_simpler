@@ -41,6 +41,14 @@ LOCAL = False
 # Flag to upload the data to the Hugging Face Hub
 UPLOAD = True
 
+# Flag to binarise the data
+BINARY = True
+
+# Flag to BMRL the data
+BMRL = True
+
+########################################
+
 # Model to use for embedding
 model_name = "mixedbread-ai/mxbai-embed-large-v1"
 
@@ -49,21 +57,9 @@ num_cores = cpu_count()-1
 
 # Setup transaction details
 repo_id = "bluuebunny/arxiv_abstract_embedding_mxbai_large_v1_milvus"
-repo_type = "dataset"
-
-# Subfolder in the repo of the dataset where the file is stored
-folder_in_repo = "data"
-allow_patterns = f"{folder_in_repo}/{year}.parquet"
-
-# Where to store the local copy of the dataset
-local_dir = repo_id
 
 # Import secrets
 config = dotenv_values(".env")
-
-# Create embed folder
-embed_folder = f"{year}-diff-embed"
-os.makedirs(embed_folder, exist_ok=True)
 
 ################################################################################
 # Download the dataset
@@ -174,6 +170,16 @@ def embed(input_text):
 ################################################################################
 # Gather preexisting embeddings
 
+# Subfolder in the repo of the dataset where the file is stored
+folder_in_repo = "data"
+allow_patterns = f"{folder_in_repo}/{year}.parquet"
+
+# Where to store the local copy of the dataset
+local_dir = repo_id
+
+# Set repo type
+repo_type = "dataset"
+
 # Create local directory
 os.makedirs(local_dir, exist_ok=True)
 
@@ -229,6 +235,10 @@ selected_columns = ['id', 'vector', '$meta']
 # Merge previous embeddings and new embeddings
 new_embeddings = pd.concat([previous_embeddings, new_papers[selected_columns]])
 
+# Create embed folder
+embed_folder = f"{year}-diff-embed"
+os.makedirs(embed_folder, exist_ok=True)
+
 # Save the embedded file
 embed_filename = f'{embed_folder}/{year}.parquet'
 print(f"Saving newly embedded dataframe to: {embed_filename}")
@@ -253,6 +263,94 @@ if UPLOAD:
 else:
     print("Not uploading new embeddings to the repo")
     print("To upload new embeddings, set UPLOAD to True")
+################################################################################
+
+# Binarise the data
+if BINARY:
+
+    print(f"Binarising the data for year: {year}")
+    print("Set BINARY = False to not binarise the embeddings")
+
+    # Function to convert dense vector to binary vector
+    def dense_to_binary(dense_vector):
+        return np.packbits(np.where(dense_vector >= 0, 1, 0))
+
+    # Create a folder to store binary embeddings
+    binary_folder = f"{year}-binary-embed"
+    os.makedirs(binary_folder, exist_ok=True)
+
+    # Convert the dense vectors to binary vectors
+    new_embeddings['vector'] = new_embeddings['vector'].progress_apply(dense_to_binary)
+
+    # Save the binary embeddings to a parquet file
+    new_embeddings.to_parquet(f'{binary_folder}/{year}.parquet', index=False)
+
+if BINARY and UPLOAD:
+
+    # Setup transaction details
+    repo_id = "bluuebunny/arxiv_abstract_embedding_mxbai_large_v1_milvus_binary"
+    repo_type = "dataset"
+
+    api.create_repo(repo_id=repo_id, repo_type=repo_type, exist_ok=True)
+
+    # Subfolder in the repo of the dataset where the file is stored
+    folder_in_repo = "data"
+
+    print(f"Uploading binary embeddings to {repo_id} from folder {binary_folder}")
+
+    # Upload all files within the folder to the specified repository
+    api.upload_folder(repo_id=repo_id, folder_path=binary_folder, path_in_repo=folder_in_repo, repo_type=repo_type)
+
+    print("Upload complete")
+
+else:
+    print("Not uploading Binary embeddings to the repo")
+    print("To upload embeddings, set UPLOAD and BINARY both to True")
+
+
+################################################################################
+
+# BMRL the data
+if BMRL:
+    print(f"BMRL'ing the data for year: {year}")
+    print("Set BMRL = False to not binarise and MRL the embeddings")
+
+    # Function to chop a binary vector to a specific size
+    def binary_to_mrl(binary_vector, size=512):
+        return np.packbits(np.unpackbits(binary_vector)[:size])
+
+    # Create a folder to store binary embeddings
+    bmrl_folder = f"{year}-bmrl-embed"
+    os.makedirs(bmrl_folder, exist_ok=True)
+
+    # Convert the dense vectors to binary vectors
+    new_embeddings['vector'] = new_embeddings['vector'].progress_apply(binary_to_mrl)
+
+    # Save the binary embeddings to a parquet file
+    new_embeddings.to_parquet(f'{bmrl_folder}/{year}.parquet', index=False)
+
+if BMRL and UPLOAD:
+
+    # Setup transaction details
+    repo_id = "bluuebunny/arxiv_abstract_embedding_mxbai_large_v1_milvus_bmrl"
+    repo_type = "dataset"
+
+    api.create_repo(repo_id=repo_id, repo_type=repo_type, exist_ok=True)
+
+    # Subfolder in the repo of the dataset where the file is stored
+    folder_in_repo = "data"
+
+    print(f"Uploading binary embeddings to {repo_id} from folder {bmrl_folder}")
+
+    # Upload all files within the folder to the specified repository
+    api.upload_folder(repo_id=repo_id, folder_path=bmrl_folder, path_in_repo=folder_in_repo, repo_type=repo_type)
+
+    print("Upload complete")
+
+else:
+    print("Not uploading BMRL embeddings to the repo")
+    print("To upload embeddings, set UPLOAD and BMRL both to True")
+
 ################################################################################
 
 # Track time
