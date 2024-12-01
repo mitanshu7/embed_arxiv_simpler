@@ -21,7 +21,7 @@ import numpy as np # For array manipulation
 from huggingface_hub import HfApi # To transact with huggingface.co
 import sys # To quit the script
 import datetime # get current year
-from time import time # To time the script
+from time import time, sleep # To time the script
 
 # Start timer
 start = time()
@@ -153,6 +153,9 @@ def embed(input_text):
         embedding = model.encode(input_text, device=device)
 
     else:
+        
+        # Avoid rate limit from api
+        sleep(0.2)
 
         # Calculate embeddings by calling mxbai.embeddings()
         result = mxbai.embeddings(
