@@ -94,28 +94,64 @@ else:
 # https://huggingface.co/docs/datasets/en/about_arrow#memory-mapping
 # Load metadata
 print(f"Loading json metadata")
-arxiv_metadata_all = load_dataset("json", data_files= str(f"{download_file}"))
+dataset = load_dataset("json", data_files= str(f"{download_file}"))
+
+# Split metadata by year
+# Convert to pandas
+print(f"Converting metadata into pandas")
+arxiv_metadata_all = dataset['train'].to_pandas()
 
 ########################################
-# Function to add year to metadata
-def add_year(example):
+# Function to extract year from arxiv id
+# https://info.arxiv.org/help/arxiv_identifier.html
+# Function to extract Month and year of publication using arxiv ID
+def extract_month_year(arxiv_id, what='month'):
 
-    example['year'] = example['id'].split('/')[1][:2] if '/' in example['id'] else example['id'][:2]
+    # Check if arxiv_id is not None before proceeding
+    if arxiv_id:
 
-    return example
+        # Check if the arXiv ID is a pre-2007 format or post-2007 format
+        # Pre-2007 format: archive.subject_class/YYMMnnn
+        if '/' in arxiv_id:
+
+            # Extract the YYMMnnn part
+            yymmnnn = arxiv_id.split('/')[1]
+
+            # Extract first 4 digits
+            yymm = yymmnnn[:4]
+
+        # Post-2007 format: YYMM.NNNNN
+        else:
+
+            yymm = arxiv_id.split('.')[0]
+
+        # Convert the year-month string to a datetime object
+        date = pd.to_datetime(yymm, format='%y%m')
+
+        # Format the date as a string in the desired format
+        # formatted_date = date.strftime('%B %Y')
+        month = date.strftime('%B')
+        year = date.strftime('%Y')
+
+        # Return the formatted date
+        if what == 'month':
+            return month
+        elif what == 'year':
+            return year
+
+    else:
+
+        # Return None if arxiv_id is None
+        return None
 ########################################
 
 # Add year to metadata
 print(f"Adding year to metadata")
-arxiv_metadata_all = arxiv_metadata_all.map(add_year, num_proc=num_cores)
+arxiv_metadata_all['year'] =  arxiv_metadata_all['id'].apply(extract_month_year, what='year')
 
 # Filter by year
 print(f"Filtering metadata by year: {year}")
-arxiv_metadata_all = arxiv_metadata_all.filter(lambda example: example['year'] == year, num_proc=num_cores)
-
-# Convert to pandas
-print(f"Loading metadata for year: {year} into pandas")
-arxiv_metadata_split = arxiv_metadata_all['train'].to_pandas()
+arxiv_metadata_split = arxiv_metadata_all[arxiv_metadata_all['year'] == year]
 
 ################################################################################
 # Load Model
@@ -146,7 +182,10 @@ def embed(input_text):
     if LOCAL:
 
         # Calculate embeddings by calling model.encode(), specifying the device
-        embedding = model.encode(input_text, device=device)
+        embedding = model.encode(input_text, device=device, precision="float32")
+
+        # Enforce 32-bit float precision
+        embedding = np.array(embedding, dtype=np.float32)
 
     else:
         
@@ -162,7 +201,7 @@ def embed(input_text):
         truncation_strategy='end'
         )
 
-        embedding = np.array(result.data[0].embedding)
+        embedding = np.array(result.data[0].embedding, dtype=np.float32)
 
     return embedding
 ########################################
@@ -220,17 +259,37 @@ if num_new_papers == 0:
 print(f"Creating new embeddings for: {num_new_papers} entries")
 new_papers["vector"] = new_papers["abstract"].progress_apply(embed)
 
-# Rename columns
-new_papers.rename(columns={'title': 'Title', 'authors': 'Authors', 'abstract': 'Abstract'}, inplace=True)
-
+####################
 # Add URL column
-new_papers['URL'] = 'https://arxiv.org/abs/' + new_papers['id']
+arxiv_metadata_split['url'] = 'https://arxiv.org/abs/' + arxiv_metadata_split['id']
 
-# Create milvus compatible parquet file, $meta is a json string of the metadata
-new_papers['$meta'] = new_papers[['Title', 'Authors', 'Abstract', 'URL']].apply(lambda row: json.dumps(row.to_dict()), axis=1)
+# Add month column
+arxiv_metadata_split['month'] = arxiv_metadata_split['id'].apply(extract_month_year, what='month')
 
+####################
+# Trim title to 512 characters
+arxiv_metadata_split['title'] = arxiv_metadata_split['title'].apply(lambda x: x[:508] + '...' if len(x) > 512 else x)
+
+# Trim categories to 128 characters
+arxiv_metadata_split['categories'] = arxiv_metadata_split['categories'].apply(lambda x: x[:124] + '...' if len(x) > 128 else x)
+
+# Trim authors to 128 characters
+arxiv_metadata_split['authors'] = arxiv_metadata_split['authors'].apply(lambda x: x[:124] + '...' if len(x) > 128 else x)
+
+# Trim abstract to 3072 characters
+arxiv_metadata_split['abstract'] = arxiv_metadata_split['abstract'].apply(lambda x: x[:3068] + '...' if len(x) > 3072 else x)
+
+####################
+# Remove newline characters from authors, title and categories columns
+arxiv_metadata_split['title'] = arxiv_metadata_split['title'].astype(str).str.replace('\n', ' ', regex=False)
+
+arxiv_metadata_split['authors'] = arxiv_metadata_split['authors'].astype(str).str.replace('\n', ' ', regex=False)
+
+arxiv_metadata_split['categories'] = arxiv_metadata_split['categories'].astype(str).str.replace('\n', ' ', regex=False)
+
+####################
 # Selecting id, vector and $meta to retain
-selected_columns = ['id', 'vector', '$meta']
+selected_columns = ['id', 'vector', 'title', 'abstract', 'authors', 'categories', 'month', 'year', 'url']
 
 # Merge previous embeddings and new embeddings
 new_embeddings = pd.concat([previous_embeddings, new_papers[selected_columns]])
