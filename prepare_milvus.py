@@ -17,7 +17,7 @@ local_dir = "volumes/milvus"
 allow_patterns = "*.parquet"
 
 # Download the repo
-snapshot_download(repo_id=repo_id, repo_type=repo_type, local_dir=local_dir, allow_patterns=allow_patterns)
+# snapshot_download(repo_id=repo_id, repo_type=repo_type, local_dir=local_dir, allow_patterns=allow_patterns)
 
 
 ################################################################################
@@ -39,8 +39,16 @@ schema = MilvusClient.create_schema(
 )
 
 # Add the fields to the schema
-schema.add_field(field_name="id", datatype=DataType.VARCHAR, is_primary=True, max_length=512)
+schema.add_field(field_name="id", datatype=DataType.VARCHAR, is_primary=True, max_length=32)
 schema.add_field(field_name="vector", datatype=DataType.FLOAT_VECTOR, dim=1024)
+
+schema.add_field(field_name="title", datatype=DataType.VARCHAR, max_length=512)
+schema.add_field(field_name="authors", datatype=DataType.VARCHAR, max_length=128)
+schema.add_field(field_name="abstract", datatype=DataType.VARCHAR, max_length=3072)
+schema.add_field(field_name="categories", datatype=DataType.VARCHAR, max_length=128)
+schema.add_field(field_name="month", datatype=DataType.VARCHAR, max_length=16)
+schema.add_field(field_name="year", datatype=DataType.VARCHAR, max_length=8)
+schema.add_field(field_name="url", datatype=DataType.VARCHAR, max_length=64)
 
 print("Issues with scheme: ", schema.verify())
 

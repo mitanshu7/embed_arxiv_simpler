@@ -4,3 +4,6 @@
 *.parquet
 *.json
 .cache
+embedEtcd.yaml
+user.yaml
+volumes/
