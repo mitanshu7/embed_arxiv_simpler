@@ -20,6 +20,7 @@ from dotenv import dotenv_values # To load environment variables
 import numpy as np # For array manipulation
 from huggingface_hub import HfApi # To transact with huggingface.co
 from glob import glob # To get all files in a folder
+from datetime import datetime # To get the current date and time
 
 # Track time
 start = time()
@@ -100,48 +101,19 @@ os.makedirs(split_folder, exist_ok=True)
 # https://info.arxiv.org/help/arxiv_identifier.html
 # Function to extract Month and year of publication using arxiv ID
 def extract_month_year(arxiv_id, what='month'):
-
-    # Check if arxiv_id is not None before proceeding
-    if arxiv_id:
-
-        # Check if the arXiv ID is a pre-2007 format or post-2007 format
-        # Pre-2007 format: archive.subject_class/YYMMnnn
-        if '/' in arxiv_id:
-
-            # Extract the YYMMnnn part
-            yymmnnn = arxiv_id.split('/')[1]
-
-            # Extract first 4 digits
-            yymm = yymmnnn[:4]
-
-        # Post-2007 format: YYMM.NNNNN
-        else:
-
-            yymm = arxiv_id.split('.')[0]
-
-        # Convert the year-month string to a datetime object
-        date = pd.to_datetime(yymm, format='%y%m')
-
-        # Format the date as a string in the desired format
-        # formatted_date = date.strftime('%B %Y')
-        month = date.strftime('%B')
-        year = date.strftime('%Y')
-
-        # Return the formatted date
-        if what == 'month':
-            return month
-        elif what == 'year':
-            return year
-
-    else:
-
-        # Return None if arxiv_id is None
-        return None
+    # Identify the relevant YYMM part based on the arXiv ID format
+    yymm = arxiv_id.split('/')[-1][:4] if '/' in arxiv_id else arxiv_id.split('.')[0]
+    
+    # Convert the year-month string to a datetime object
+    date = datetime.strptime(yymm, '%y%m')
+    
+    # Return the desired part based on the input parameter
+    return date.strftime('%B') if what == 'month' else date.strftime('%Y')
     
 ########################################
 
 # Extract the year from the arxiv id column
-arxiv_metadata_all['year'] =  arxiv_metadata_all['id'].apply(extract_month_year, what='year')
+arxiv_metadata_all['year'] =  arxiv_metadata_all['id'].progress_apply(extract_month_year, what='year')
 
 # Group by the year and save each group as a separate Parquet file
 for year, group in arxiv_metadata_all.groupby('year'):
@@ -217,6 +189,7 @@ def embed(input_text):
         truncation_strategy='end'
         )
 
+        # Enforce 32-bit float precision
         embedding = np.array(result.data[0].embedding, dtype=np.float32)
 
     return embedding
@@ -241,28 +214,30 @@ for split_file in split_files:
     arxiv_metadata_split['url'] = 'https://arxiv.org/abs/' + arxiv_metadata_split['id']
 
     # Add month column
-    arxiv_metadata_split['month'] = arxiv_metadata_split['id'].apply(extract_month_year, what='month')
+    arxiv_metadata_split['month'] = arxiv_metadata_split['id'].progress_apply(extract_month_year, what='month')
 
 ####################
-    # Trim title to 512 characters
-    arxiv_metadata_split['title'] = arxiv_metadata_split['title'].apply(lambda x: x[:508] + '...' if len(x) > 512 else x)
-
-    # Trim categories to 128 characters
-    arxiv_metadata_split['categories'] = arxiv_metadata_split['categories'].apply(lambda x: x[:124] + '...' if len(x) > 128 else x)
-
-    # Trim authors to 128 characters
-    arxiv_metadata_split['authors'] = arxiv_metadata_split['authors'].apply(lambda x: x[:124] + '...' if len(x) > 128 else x)
-
-    # Trim abstract to 3072 characters
-    arxiv_metadata_split['abstract'] = arxiv_metadata_split['abstract'].apply(lambda x: x[:3068] + '...' if len(x) > 3072 else x)
-
-####################
-    # Remove newline characters from authors, title and categories columns
+    # Remove newline characters from authors, title, abstract and categories columns
     arxiv_metadata_split['title'] = arxiv_metadata_split['title'].astype(str).str.replace('\n', ' ', regex=False)
 
     arxiv_metadata_split['authors'] = arxiv_metadata_split['authors'].astype(str).str.replace('\n', ' ', regex=False)
 
     arxiv_metadata_split['categories'] = arxiv_metadata_split['categories'].astype(str).str.replace('\n', ' ', regex=False)
+
+    arxiv_metadata_split['abstract'] = arxiv_metadata_split['abstract'].astype(str).str.replace('\n', ' ', regex=False)
+
+####################
+    # Trim title to 512 characters
+    arxiv_metadata_split['title'] = arxiv_metadata_split['title'].progress_apply(lambda x: x[:508] + '...' if len(x) > 512 else x)
+
+    # Trim categories to 128 characters
+    arxiv_metadata_split['categories'] = arxiv_metadata_split['categories'].progress_apply(lambda x: x[:124] + '...' if len(x) > 128 else x)
+
+    # Trim authors to 128 characters
+    arxiv_metadata_split['authors'] = arxiv_metadata_split['authors'].progress_apply(lambda x: x[:124] + '...' if len(x) > 128 else x)
+
+    # Trim abstract to 3072 characters
+    arxiv_metadata_split['abstract'] = arxiv_metadata_split['abstract'].progress_apply(lambda x: x[:3068] + '...' if len(x) > 3072 else x)
 
 ####################
     # Selecting id, vector and $meta to retain
