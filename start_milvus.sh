@@ -18,7 +18,7 @@
 
 run_embed() {
 
-    mkdir -p volumes/milvus
+    mkdir -p $(pwd)/volumes/milvus
     
     cat << EOF > embedEtcd.yaml
 listen-client-urls: http://0.0.0.0:2379
