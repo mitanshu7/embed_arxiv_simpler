@@ -219,6 +219,9 @@ except Exception as e:
 # Find papers that are not in the previous embeddings
 new_papers = arxiv_metadata_split[~arxiv_metadata_split['id'].isin(previous_embeddings['id'])]
 
+# Drop duplicates based on the 'id' column
+new_papers = new_papers.drop_duplicates(subset='id', keep='last', ignore_index=True)
+
 # Number of new papers
 num_new_papers = len(new_papers)
 

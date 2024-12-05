@@ -205,6 +205,9 @@ for split_file in split_files:
     print(f"Loading metadata file: {split_file}")   
     arxiv_metadata_split = pd.read_parquet(split_file)
 
+    # Drop duplicates based on the 'id' column
+    arxiv_metadata_split = arxiv_metadata_split.drop_duplicates(subset='id', keep='last', ignore_index=True)
+
     # Create a column for embeddings
     print(f"Creating embeddings for: {len(arxiv_metadata_split)} entries")
     arxiv_metadata_split["vector"] = arxiv_metadata_split["abstract"].progress_apply(embed)
