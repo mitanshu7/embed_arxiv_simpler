@@ -17,6 +17,9 @@
 # limitations under the License.
 
 run_embed() {
+
+    mkdir -p volumes/milvus
+    
     cat << EOF > embedEtcd.yaml
 listen-client-urls: http://0.0.0.0:2379
 advertise-client-urls: http://0.0.0.0:2379
@@ -47,7 +50,7 @@ EOF
         --health-start-period=90s \
         --health-timeout=20s \
         --health-retries=3 \
-        docker.io/milvusdb/milvus:v2.5.0-beta \
+        docker.io/milvusdb/milvus:v2.4.17 \
         milvus run standalone  1> /dev/null
 }
 
