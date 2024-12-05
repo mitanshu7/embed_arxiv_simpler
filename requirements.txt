@@ -11,3 +11,4 @@ tqdm
 mixedbread-ai
 python-dotenv
 numpy
+pymilvus
