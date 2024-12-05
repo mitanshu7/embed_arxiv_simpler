@@ -62,6 +62,9 @@ repo_id = "bluuebunny/arxiv_abstract_embedding_mxbai_large_v1_milvus"
 # Import secrets
 config = dotenv_values(".env")
 
+def is_running_in_huggingface_space():
+    return "SPACE_ID" in os.environ
+
 ################################################################################
 # Download the dataset
 
@@ -143,8 +146,13 @@ if LOCAL:
 else:
     print("Setting up mxbai API client")
     print("To use local resources, set LOCAL = True")
+
     # Setup mxbai
-    mxbai_api_key = config["MXBAI_API_KEY"]
+    if is_running_in_huggingface_space():
+        mxbai_api_key = os.getenv("MXBAI_API_KEY")
+    else:
+        mxbai_api_key = config["MXBAI_API_KEY"]
+
     mxbai = MixedbreadAI(api_key=mxbai_api_key)
 
 ########################################
@@ -289,7 +297,13 @@ new_embeddings.to_parquet(embed_filename, index=False)
 if UPLOAD:
 
     print(f"Uploading new embeddings to: {repo_id}")
-    access_token =  config["HF_API_KEY"]
+
+    # Setup Hugging Face API
+    if is_running_in_huggingface_space():
+        access_token = os.getenv("HF_API_KEY")
+    else:
+        access_token =  config["HF_API_KEY"]
+
     api = HfApi(token=access_token)
 
     # Upload all files within the folder to the specified repository
