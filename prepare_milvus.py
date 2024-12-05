@@ -10,7 +10,7 @@ from glob import glob
 # https://huggingface.co/docs/huggingface_hub/v0.24.6/en/package_reference/file_download#huggingface_hub.snapshot_download
 
 # Setup transaction details
-repo_id = "bluuebunny/arxiv_abstract_embedding_mxbai_large_v1_milvus"
+repo_id = "bluuebunny/arxiv_abstract_embedding_mxbai_large_v1_milvus_binary"
 # repo_id = "bluuebunny/tmp"
 repo_type = "dataset"
 local_dir = "volumes/milvus"
@@ -40,7 +40,7 @@ schema = MilvusClient.create_schema(
 
 # Add the fields to the schema
 schema.add_field(field_name="id", datatype=DataType.VARCHAR, is_primary=True, max_length=32)
-schema.add_field(field_name="vector", datatype=DataType.FLOAT_VECTOR, dim=1024)
+schema.add_field(field_name="vector", datatype=DataType.BINARY_VECTOR, dim=1024)
 
 schema.add_field(field_name="title", datatype=DataType.VARCHAR, max_length=512)
 schema.add_field(field_name="authors", datatype=DataType.VARCHAR, max_length=256)
@@ -147,8 +147,8 @@ index_params = MilvusClient.prepare_index_params()
 # Add an index on the vector field.
 index_params.add_index(
     field_name="vector",
-    metric_type="COSINE",
-    index_type="FLAT",
+    metric_type="HAMMING",
+    index_type="BIN_FLAT",
     index_name="vector_index",
 )
 
