@@ -14,7 +14,7 @@ def dense_to_binary(dense_vector):
 
 # Gather fp32 files
 floats = glob('data/arxiv-metadata-oai-snapshot-split-embed/*.parquet')
-floats.sort(reverse=True)
+floats.sort()
 
 # Create a folder to store binary embeddings
 folder_name = 'binary_embeddings'
@@ -33,26 +33,5 @@ for file in floats:
     df.to_parquet(f'{folder_name}/{os.path.basename(file)}')
 
 #######################################################################################
-
-# Function to convert dense vector to binary vector
-def dense_to_bmrl(dense_vector, size=512):
-    return np.packbits(np.where(dense_vector >= 0, 1, 0)[:size]).tobytes()
-
-# Create a folder to store binary embeddings
-# Create a folder to store binary embeddings
-folder_name = 'bmrl_embeddings'
-os.makedirs(folder_name, exist_ok=True)
-
-# Convert and save each file
-for file in floats:
-    
-
-    print(f"Processing file: {file}")
-
-    df = pd.read_parquet(file)
-
-    df['vector'] = df['vector'].progress_apply(dense_to_bmrl)
-    
-    df.to_parquet(f'{folder_name}/{os.path.basename(file)}')
 
 print("Conversion completed.")
