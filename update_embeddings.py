@@ -45,9 +45,6 @@ UPLOAD = True
 # Flag to binarise the data
 BINARY = True
 
-# Flag to BMRL the data
-BMRL = True
-
 ########################################
 
 # Model to use for embedding
@@ -324,7 +321,7 @@ if BINARY:
 
     # Function to convert dense vector to binary vector
     def dense_to_binary(dense_vector):
-        return np.packbits(np.where(dense_vector >= 0, 1, 0))
+        return np.packbits(np.where(dense_vector >= 0, 1, 0)).tobytes()
 
     # Create a folder to store binary embeddings
     binary_folder = f"{year}-binary-embed"
@@ -357,50 +354,6 @@ if BINARY and UPLOAD:
 else:
     print("Not uploading Binary embeddings to the repo")
     print("To upload embeddings, set UPLOAD and BINARY both to True")
-
-
-################################################################################
-
-# BMRL the data
-if BMRL:
-    print(f"BMRL'ing the data for year: {year}")
-    print("Set BMRL = False to not binarise and MRL the embeddings")
-
-    # Function to chop a binary vector to a specific size
-    def binary_to_mrl(binary_vector, size=512):
-        return np.packbits(np.unpackbits(binary_vector)[:size])
-
-    # Create a folder to store binary embeddings
-    bmrl_folder = f"{year}-bmrl-embed"
-    os.makedirs(bmrl_folder, exist_ok=True)
-
-    # Convert the dense vectors to binary vectors
-    new_embeddings['vector'] = new_embeddings['vector'].progress_apply(binary_to_mrl)
-
-    # Save the binary embeddings to a parquet file
-    new_embeddings.to_parquet(f'{bmrl_folder}/{year}.parquet', index=False)
-
-if BMRL and UPLOAD:
-
-    # Setup transaction details
-    repo_id = "bluuebunny/arxiv_abstract_embedding_mxbai_large_v1_milvus_bmrl"
-    repo_type = "dataset"
-
-    api.create_repo(repo_id=repo_id, repo_type=repo_type, exist_ok=True)
-
-    # Subfolder in the repo of the dataset where the file is stored
-    folder_in_repo = "data"
-
-    print(f"Uploading binary embeddings to {repo_id} from folder {bmrl_folder}")
-
-    # Upload all files within the folder to the specified repository
-    api.upload_folder(repo_id=repo_id, folder_path=bmrl_folder, path_in_repo=folder_in_repo, repo_type=repo_type)
-
-    print("Upload complete")
-
-else:
-    print("Not uploading BMRL embeddings to the repo")
-    print("To upload embeddings, set UPLOAD and BMRL both to True")
 
 ################################################################################
 
