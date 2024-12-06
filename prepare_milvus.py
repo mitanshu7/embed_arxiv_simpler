@@ -12,6 +12,9 @@ from glob import glob
 FLOAT = False
 BINARY = True
 
+# Print on console which 1 of the flags is True
+print(f"FLOAT: {FLOAT}")
+print(f"BINARY: {BINARY}")
 
 ################################################################################
 # Download vector dataset
@@ -66,7 +69,7 @@ schema.add_field(field_name="id", datatype=DataType.VARCHAR, is_primary=True, ma
 if FLOAT:
     schema.add_field(field_name="vector", datatype=DataType.FLOAT_VECTOR, dim=1024)
 
-elif BINARY:
+if BINARY:
     schema.add_field(field_name="vector", datatype=DataType.BINARY_VECTOR, dim=1024)
 
 schema.add_field(field_name="title", datatype=DataType.VARCHAR, max_length=512)
@@ -178,14 +181,16 @@ if FLOAT:
         metric_type="COSINE",
         index_type="IVF_FLAT",
         index_name="vector_index",
+        params={ "nlist": 128 }
     )
 
-elif BINARY:
+if BINARY:
     index_params.add_index(
         field_name="vector",
         metric_type="HAMMING",
         index_type="BIN_IVF_FLAT",
         index_name="vector_index",
+        params={ "nlist": 128 }
     )
 
 print("Creating Index file.")
