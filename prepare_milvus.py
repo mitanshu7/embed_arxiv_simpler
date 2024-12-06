@@ -6,12 +6,34 @@ from time import sleep
 from glob import glob
 
 ################################################################################
+# Configuration
+
+# Flag to indicate if the data is float or binary
+FLOAT = False
+BINARY = True
+
+
+################################################################################
 # Download vector dataset
 # https://huggingface.co/docs/huggingface_hub/v0.24.6/en/package_reference/file_download#huggingface_hub.snapshot_download
 
 # Setup transaction details
-repo_id = "bluuebunny/arxiv_abstract_embedding_mxbai_large_v1_milvus_binary"
-# repo_id = "bluuebunny/tmp"
+# When 100% of the data is float, use the float repo
+if FLOAT:
+    repo_id = "bluuebunny/arxiv_abstract_embedding_mxbai_large_v1_milvus"
+
+# When 100% of the data is binary, use the binary repo
+if BINARY:
+    repo_id = "bluuebunny/arxiv_abstract_embedding_mxbai_large_v1_milvus_binary"
+
+# Check that only 1 of the flags is True
+if FLOAT and BINARY:
+    raise ValueError("FLOAT and BINARY are both True, set only 1 to True")
+
+# Check that at least 1 of the flags is True
+if not FLOAT and not BINARY:
+    raise ValueError("FLOAT and BINARY are both False, set at least 1 to True")
+
 repo_type = "dataset"
 local_dir = "volumes/milvus"
 allow_patterns = "*.parquet"
@@ -40,7 +62,12 @@ schema = MilvusClient.create_schema(
 
 # Add the fields to the schema
 schema.add_field(field_name="id", datatype=DataType.VARCHAR, is_primary=True, max_length=32)
-schema.add_field(field_name="vector", datatype=DataType.BINARY_VECTOR, dim=1024)
+
+if FLOAT:
+    schema.add_field(field_name="vector", datatype=DataType.FLOAT_VECTOR, dim=1024)
+
+elif BINARY:
+    schema.add_field(field_name="vector", datatype=DataType.BINARY_VECTOR, dim=1024)
 
 schema.add_field(field_name="title", datatype=DataType.VARCHAR, max_length=512)
 schema.add_field(field_name="authors", datatype=DataType.VARCHAR, max_length=256)
@@ -145,12 +172,21 @@ while True:
 index_params = MilvusClient.prepare_index_params()
 
 # Add an index on the vector field.
-index_params.add_index(
-    field_name="vector",
-    metric_type="HAMMING",
-    index_type="BIN_FLAT",
-    index_name="vector_index",
-)
+if FLOAT:
+    index_params.add_index(
+        field_name="vector",
+        metric_type="COSINE",
+        index_type="IVF_FLAT",
+        index_name="vector_index",
+    )
+
+elif BINARY:
+    index_params.add_index(
+        field_name="vector",
+        metric_type="HAMMING",
+        index_type="BIN_IVF_FLAT",
+        index_name="vector_index",
+    )
 
 print("Creating Index file.")
 
