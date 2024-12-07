@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# 0. Echo date
+echo "Starting script at $(date)"
+
 # 1. Activate the conda environment
 source /home/$USER/miniforge3/bin/activate papermatch
 
@@ -8,3 +11,6 @@ python /home/$USER/embed_arxiv_simpler/prepare_milvus.py >> /home/$USER/embed_ar
 
 # 3. Restart the systemd service
 systemctl --user restart papermatch.service
+
+# 4. Echo date
+echo "Script finished at $(date)"
