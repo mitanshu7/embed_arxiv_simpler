@@ -108,6 +108,7 @@ stop() {
 }
 
 delete_container() {
+    stop
     res=`docker ps|grep milvus-standalone|wc -l`
     if [ $res -eq 1 ]
     then
@@ -166,6 +167,9 @@ case $1 in
         ;;
     delete)
         delete
+        ;;
+    delete_container)
+        delete_container
         ;;
     *)
         echo "please use bash standalone_embed.sh restart|start|stop|upgrade|delete_container|delete"
