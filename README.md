@@ -56,22 +56,22 @@ See `.env.sample` for an example.
 ## Keep embeddings updated:
 1. Setup a crontab to run the script `update_embeddings.sh` every week, modify command accordingly.
 ```bash
-crontab -e
+$ crontab -e
 
-0 0 * * 1 /bin/bash /home/$USER/embed_arxiv_simpler/update_embeddings.sh >> /home/$USER/embed_arxiv_simpler/update_embeddings_crontab.log 2>&1
+$ 0 0 * * 1 /bin/bash /home/$USER/embed_arxiv_simpler/update_embeddings.sh >> /home/$USER/embed_arxiv_simpler/update_embeddings.log 2>&1
 
-crontab -l
+$ crontab -l
 ```
 This cron runs midnight every Monday.
 
 ## Keep vector database updated:
 1. Setup a crontab to run the script `update_milvus.sh` every week, modify command accordingly.
 ```bash
-crontab -e
+$ crontab -e
 
-0 0 * * 2 /bin/bash /home/$USER/PaperMatch/update_milvus.sh >> /home/$USER/PaperMatch/update_milvus_crontab.log 2>&1
+$ 0 0 * * 2 /bin/bash /home/$USER/embed_arxiv_simpler/update_milvus.sh >> /home/$USER/embed_arxiv_simpler/update_milvus.log 2>&1
 
-crontab -l
+$ crontab -l
 ```
 This cron runs midnight every Tuesday.
 
