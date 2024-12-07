@@ -1,7 +1,10 @@
 #!/bin/bash
 
-source /home/milvus/miniforge3/bin/activate search_arxiv
+# 1. Activate the conda environment
+source /home/$USER/miniforge3/bin/activate papermatch
 
-python /home/milvus/PaperMatch/prepare_milvus.py >> /home/milvus/PaperMatch/update_milvus.log 2>&1
+# 2. Run the Python script
+python /home/$USER/embed_arxiv_simpler/prepare_milvus.py >> /home/$USER/embed_arxiv_simpler/prepare_milvus.log 2>&1
 
+# 3. Restart the systemd service
 systemctl --user restart papermatch.service
