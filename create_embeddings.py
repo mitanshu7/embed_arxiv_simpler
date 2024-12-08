@@ -11,7 +11,6 @@ from sentence_transformers import SentenceTransformer # For embedding the text
 import torch # For gpu 
 import pandas as pd # Data manipulation
 from time import time, sleep # Track time taken
-import json # To make milvus compatible $meta
 import os # Folder and file creation
 from tqdm import tqdm # Progress bar
 tqdm.pandas() # Progress bar for pandas
@@ -51,6 +50,12 @@ folder_in_repo = "data"
 
 # Import secrets
 config = dotenv_values(".env")
+
+# Print configuration
+print(f"Configuration:")
+print(f"FORCE: {FORCE}")
+print(f"LOCAL: {LOCAL}")
+print(f"UPLOAD: {UPLOAD}")
 
 ################################################################################
 # Download the dataset
@@ -213,6 +218,8 @@ for split_file in split_files:
     arxiv_metadata_split["vector"] = arxiv_metadata_split["abstract"].progress_apply(embed)
 
 ####################
+    print("Adding url and month columns")
+
     # Add URL column
     arxiv_metadata_split['url'] = 'https://arxiv.org/abs/' + arxiv_metadata_split['id']
 
@@ -220,6 +227,8 @@ for split_file in split_files:
     arxiv_metadata_split['month'] = arxiv_metadata_split['id'].progress_apply(extract_month_year, what='month')
 
 ####################
+    print("Removing newline characters from title, authors, categories, abstract")
+
     # Remove newline characters from authors, title, abstract and categories columns
     arxiv_metadata_split['title'] = arxiv_metadata_split['title'].astype(str).str.replace('\n', ' ', regex=False)
 
@@ -230,6 +239,8 @@ for split_file in split_files:
     arxiv_metadata_split['abstract'] = arxiv_metadata_split['abstract'].astype(str).str.replace('\n', ' ', regex=False)
 
 ####################
+    print("Trimming title, authors, categories, abstract")
+
     # Trim title to 512 characters
     arxiv_metadata_split['title'] = arxiv_metadata_split['title'].progress_apply(lambda x: x[:508] + '...' if len(x) > 512 else x)
 
