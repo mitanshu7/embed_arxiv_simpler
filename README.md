@@ -58,7 +58,7 @@ See `.env.sample` for an example.
 ```bash
 $ crontab -e
 
-$ 0 0 * * 1 /bin/bash /home/$USER/embed_arxiv_simpler/update_embeddings.sh >> /home/$USER/embed_arxiv_simpler/update_embeddings.log 2>&1
+$ 0 0 * * 1 /bin/bash /home/[USERNAME]/embed_arxiv_simpler/update_embeddings.sh >> /home/[USERNAME]/embed_arxiv_simpler/update_embeddings.log 2>&1
 
 $ crontab -l
 ```
@@ -69,7 +69,7 @@ This cron runs midnight every Monday.
 ```bash
 $ crontab -e
 
-$ 0 0 * * 2 /bin/bash /home/$USER/embed_arxiv_simpler/update_milvus.sh >> /home/$USER/embed_arxiv_simpler/update_milvus.log 2>&1
+$ 0 0 * * 2 /bin/bash /home/[USERNAME]/embed_arxiv_simpler/update_milvus.sh >> /home/[USERNAME]/embed_arxiv_simpler/update_milvus.log 2>&1
 
 $ crontab -l
 ```

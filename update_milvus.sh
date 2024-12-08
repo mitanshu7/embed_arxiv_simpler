@@ -2,6 +2,7 @@
 
 # 0. Echo date
 echo "Starting script at $(date)"
+USER=$(whoami)
 
 # 1. Activate the conda environment
 source /home/$USER/miniforge3/bin/activate papermatch
