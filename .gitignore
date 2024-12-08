@@ -7,3 +7,4 @@
 embedEtcd.yaml
 user.yaml
 volumes/
+*.log
