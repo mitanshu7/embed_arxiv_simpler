@@ -11,7 +11,6 @@ from sentence_transformers import SentenceTransformer # For embedding the text
 import torch # For gpu 
 import pandas as pd # Data manipulation
 from huggingface_hub import snapshot_download # Download previous embeddings
-import json # To make milvus compatible $meta
 import os # Folder and file creation
 from tqdm import tqdm # Progress bar
 tqdm.pandas() # Progress bar for pandas
@@ -30,8 +29,8 @@ start = time()
 ################################################################################
 # Configuration
 
-# Year to update embeddings for, get and set the current year
-year = str(datetime.datetime.now().year)[2:]
+# Get current year
+year = str(datetime.now().year)
 
 # Flag to force download and conversion even if files already exist
 FORCE = True
@@ -44,6 +43,14 @@ UPLOAD = True
 
 # Flag to binarise the data
 BINARY = True
+
+# Print the configuration
+print(f'Configuration:')
+print(f'Year: {year}')
+print(f'Force: {FORCE}')
+print(f'Local: {LOCAL}')
+print(f'Upload: {UPLOAD}')
+print(f'Binary: {BINARY}')
 
 ########################################
 
@@ -216,7 +223,7 @@ except Exception as e:
     print(f"Errored out with: {e}")
     print(f"No previous embeddings found for year: {year}")
     print("Creating new embeddings for all papers")
-    previous_embeddings = pd.DataFrame(columns=['id', 'vector', '$meta'])
+    previous_embeddings = pd.DataFrame(columns=['id', 'vector', 'title', 'abstract', 'authors', 'categories', 'month', 'year', 'url'])
 
 ########################################
 # Embed the new abstracts
@@ -241,36 +248,44 @@ print(f"Creating new embeddings for: {num_new_papers} entries")
 new_papers["vector"] = new_papers["abstract"].progress_apply(embed)
 
 ####################
+print("Adding url and month columns")
+
 # Add URL column
-arxiv_metadata_split['url'] = 'https://arxiv.org/abs/' + arxiv_metadata_split['id']
+new_papers['url'] = 'https://arxiv.org/abs/' + new_papers['id']
 
 # Add month column
-arxiv_metadata_split['month'] = arxiv_metadata_split['id'].progress_apply(extract_month_year, what='month')
+new_papers['month'] = new_papers['id'].progress_apply(extract_month_year, what='month')
 
 ####################
+print("Removing newline characters from title, authors, categories, abstract")
+
 # Remove newline characters from authors, title, abstract and categories columns
-arxiv_metadata_split['title'] = arxiv_metadata_split['title'].astype(str).str.replace('\n', ' ', regex=False)
+new_papers['title'] = new_papers['title'].astype(str).str.replace('\n', ' ', regex=False)
 
-arxiv_metadata_split['authors'] = arxiv_metadata_split['authors'].astype(str).str.replace('\n', ' ', regex=False)
+new_papers['authors'] = new_papers['authors'].astype(str).str.replace('\n', ' ', regex=False)
 
-arxiv_metadata_split['categories'] = arxiv_metadata_split['categories'].astype(str).str.replace('\n', ' ', regex=False)
+new_papers['categories'] = new_papers['categories'].astype(str).str.replace('\n', ' ', regex=False)
 
-arxiv_metadata_split['abstract'] = arxiv_metadata_split['abstract'].astype(str).str.replace('\n', ' ', regex=False)
+new_papers['abstract'] = new_papers['abstract'].astype(str).str.replace('\n', ' ', regex=False)
 
 ####################
+print("Trimming title, authors, categories, abstract")
+
 # Trim title to 512 characters
-arxiv_metadata_split['title'] = arxiv_metadata_split['title'].progress_apply(lambda x: x[:508] + '...' if len(x) > 512 else x)
+new_papers['title'] = new_papers['title'].progress_apply(lambda x: x[:508] + '...' if len(x) > 512 else x)
 
 # Trim categories to 128 characters
-arxiv_metadata_split['categories'] = arxiv_metadata_split['categories'].progress_apply(lambda x: x[:124] + '...' if len(x) > 128 else x)
+new_papers['categories'] = new_papers['categories'].progress_apply(lambda x: x[:124] + '...' if len(x) > 128 else x)
 
 # Trim authors to 128 characters
-arxiv_metadata_split['authors'] = arxiv_metadata_split['authors'].progress_apply(lambda x: x[:124] + '...' if len(x) > 128 else x)
+new_papers['authors'] = new_papers['authors'].progress_apply(lambda x: x[:124] + '...' if len(x) > 128 else x)
 
 # Trim abstract to 3072 characters
-arxiv_metadata_split['abstract'] = arxiv_metadata_split['abstract'].progress_apply(lambda x: x[:3068] + '...' if len(x) > 3072 else x)
+new_papers['abstract'] = new_papers['abstract'].progress_apply(lambda x: x[:3068] + '...' if len(x) > 3072 else x)
 
 ####################
+print("Concatenating previouly embedded dataframe with new embeddings")
+
 # Selecting id, vector and $meta to retain
 selected_columns = ['id', 'vector', 'title', 'abstract', 'authors', 'categories', 'month', 'year', 'url']
 
