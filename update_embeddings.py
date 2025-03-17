@@ -36,7 +36,7 @@ year = str(datetime.now().year)
 FORCE = True
 
 # Flag to embed the data locally, otherwise it will use mxbai api to embed
-LOCAL = False
+LOCAL = True
 
 # Flag to upload the data to the Hugging Face Hub
 UPLOAD = True
@@ -87,7 +87,7 @@ if not os.path.exists(download_file) or FORCE:
     print(f'Downloading {download_file}, if it exists it will be overwritten')
     print('Set FORCE to False to skip download if file already exists')
 
-    subprocess.run(['kaggle', 'datasets', 'download', '--dataset', dataset_path, '--path', download_folder, '--unzip'])
+    subprocess.run(['kaggle', 'datasets', 'download', '--dataset', dataset_path, '--path', download_folder, '--unzip', '--force'])
     
     print(f'Downloaded {download_file}')
 
