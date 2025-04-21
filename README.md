@@ -1,5 +1,5 @@
 # Embed Arxiv Simpler
-## Frontend at [PaperMatch](https://github.com/mitanshu7/PaperMatch))
+## Frontend at [PaperMatch](https://github.com/mitanshu7/PaperMatch)
 
 ## Overview
 
