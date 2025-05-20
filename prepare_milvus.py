@@ -77,7 +77,7 @@ schema.add_field(field_name="authors", datatype=DataType.VARCHAR, max_length=256
 schema.add_field(field_name="abstract", datatype=DataType.VARCHAR, max_length=3072)
 schema.add_field(field_name="categories", datatype=DataType.VARCHAR, max_length=128)
 schema.add_field(field_name="month", datatype=DataType.VARCHAR, max_length=16)
-schema.add_field(field_name="year", datatype=DataType.VARCHAR, max_length=8, is_clustering_key=True)
+schema.add_field(field_name="year", datatype=DataType.INT64, max_length=8, is_clustering_key=True)
 schema.add_field(field_name="url", datatype=DataType.VARCHAR, max_length=64)
 
 print("Issues with scheme: ", schema.verify())

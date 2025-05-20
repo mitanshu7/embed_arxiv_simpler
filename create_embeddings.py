@@ -113,7 +113,7 @@ def extract_month_year(arxiv_id, what='month'):
     date = datetime.strptime(yymm, '%y%m')
     
     # Return the desired part based on the input parameter
-    return date.strftime('%B') if what == 'month' else date.strftime('%Y')
+    return date.strftime('%B') if what == 'month' else int(date.strftime('%Y'))
     
 ########################################
 
