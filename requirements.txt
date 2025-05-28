@@ -3,7 +3,7 @@ torch
 pandas
 pyarrow
 datasets
-kaggle
+kagglehub
 sentence-transformers
 gradio
 huggingface-hub
