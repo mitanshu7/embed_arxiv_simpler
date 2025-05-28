@@ -33,7 +33,7 @@ start = time()
 year = int(datetime.now().year)
 
 # Flag to force download and conversion even if files already exist
-FORCE = False
+FORCE = True
 
 # Flag to embed the data locally, otherwise it will use mxbai api to embed
 LOCAL = True
