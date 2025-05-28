@@ -4,7 +4,6 @@
 ## Requires the Kaggle API to be installed
 ## Using subprocess to run the Kaggle CLI commands instead of Kaggle API
 ## As it allows for anonymous downloads without needing to sign in
-import subprocess
 from datasets import load_dataset # To load dataset without breaking ram
 from multiprocessing import cpu_count # To get the number of cores
 from sentence_transformers import SentenceTransformer # For embedding the text
@@ -20,6 +19,7 @@ import numpy as np # For array manipulation
 from huggingface_hub import HfApi # To transact with huggingface.co
 from glob import glob # To get all files in a folder
 from datetime import datetime # To get the current date and time
+import kagglehub # To download the dataset from Kaggle
 
 # Track time
 start = time()
@@ -64,24 +64,10 @@ print(f"UPLOAD: {UPLOAD}")
 dataset_path = 'Cornell-University/arxiv'
 
 # Download folder
-download_folder = 'data'
+download_folder = kagglehub.dataset_download(dataset_path, force_download=FORCE)
 
 # Data file path
 download_file = f'{download_folder}/arxiv-metadata-oai-snapshot.json'
-
-## Download the dataset if it doesn't exist
-if not os.path.exists(download_file) or FORCE:
-
-    print(f'Downloading {download_file}')
-
-    subprocess.run(['kaggle', 'datasets', 'download', '--dataset', dataset_path, '--path', download_folder, '--unzip'])
-    
-    print(f'Downloaded {download_file}')
-
-else:
-
-    print(f'{download_file} already exists')
-    print('Skipping download')
 
 ################################################################################
 # Convert to parquet

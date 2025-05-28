@@ -4,7 +4,6 @@
 ## Requires the Kaggle API to be installed
 ## Using subprocess to run the Kaggle CLI commands instead of Kaggle API
 ## As it allows for anonymous downloads without needing to sign in
-import subprocess
 from datasets import load_dataset # To load dataset without breaking ram
 from multiprocessing import cpu_count # To get the number of cores
 from sentence_transformers import SentenceTransformer # For embedding the text
@@ -22,6 +21,7 @@ import sys # To quit the script
 import datetime # get current year
 from time import time, sleep # To time the script
 from datetime import datetime # To get the current date and time
+import kagglehub # To download the dataset from Kaggle
 
 # Start timer
 start = time()
@@ -33,7 +33,7 @@ start = time()
 year = str(datetime.now().year)
 
 # Flag to force download and conversion even if files already exist
-FORCE = True
+FORCE = False
 
 # Flag to embed the data locally, otherwise it will use mxbai api to embed
 LOCAL = True
@@ -76,25 +76,10 @@ def is_running_in_huggingface_space():
 dataset_path = 'Cornell-University/arxiv'
 
 # Download folder
-download_folder = 'data'
+download_folder = kagglehub.dataset_download(dataset_path, force_download=FORCE)
 
 # Data file path
 download_file = f'{download_folder}/arxiv-metadata-oai-snapshot.json'
-
-## Download the dataset if it doesn't exist
-if not os.path.exists(download_file) or FORCE:
-
-    print(f'Downloading {download_file}, if it exists it will be overwritten')
-    print('Set FORCE to False to skip download if file already exists')
-
-    subprocess.run(['kaggle', 'datasets', 'download', '--dataset', dataset_path, '--path', download_folder, '--unzip', '--force'])
-    
-    print(f'Downloaded {download_file}')
-
-else:
-
-    print(f'{download_file} already exists, skipping download')
-    print('Set FORCE = True to force download')
 
 ################################################################################
 # Filter by year and convert to parquet
@@ -131,6 +116,7 @@ arxiv_metadata_all['year'] =  arxiv_metadata_all['id'].progress_apply(extract_mo
 # Filter by year
 print(f"Filtering metadata by year: {year}")
 arxiv_metadata_split = arxiv_metadata_all[arxiv_metadata_all['year'] == year]
+print(f"Number of papers in year {year}: {len(arxiv_metadata_split)}")
 
 ################################################################################
 # Load Model
@@ -218,6 +204,7 @@ try:
     # Load previous_embed
     print(f"Loading previously embedded file: {previous_embed}")   
     previous_embeddings = pd.read_parquet(previous_embed)
+    print(f"Number of previous embeddings found for year {year}: {len(previous_embeddings)}")
 
 except Exception as e:
     print(f"Errored out with: {e}")
