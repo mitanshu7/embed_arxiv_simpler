@@ -30,7 +30,7 @@ start = time()
 # Configuration
 
 # Get current year
-year = str(datetime.now().year)
+year = int(datetime.now().year)
 
 # Flag to force download and conversion even if files already exist
 FORCE = False
