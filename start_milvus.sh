@@ -31,8 +31,19 @@ EOF
     cat << EOF > user.yaml
 # Extra config to override default milvus.yaml
 EOF
+    if [ ! -f "./embedEtcd.yaml" ]
+    then
+        echo "embedEtcd.yaml file does not exist. Please try to create it in the current directory."
+        exit 1
+    fi
 
-    docker run -d \
+    if [ ! -f "./user.yaml" ]
+    then
+        echo "user.yaml file does not exist. Please try to create it in the current directory."
+        exit 1
+    fi
+    
+    podman run -d \
         --name milvus-standalone \
         --security-opt seccomp:unconfined \
         -e ETCD_USE_EMBED=true \
@@ -50,8 +61,7 @@ EOF
         --health-start-period=90s \
         --health-timeout=20s \
         --health-retries=3 \
-        --restart always \
-        docker.io/milvusdb/milvus:v2.4.23 \
+        docker.io/milvusdb/milvus:v2.5.14 \
         milvus run standalone  1> /dev/null
 }
 
@@ -59,7 +69,7 @@ wait_for_milvus_running() {
     echo "Wait for Milvus Starting..."
     while true
     do
-        res=`docker ps|grep milvus-standalone|grep healthy|wc -l`
+        res=`podman ps|grep milvus-standalone|grep healthy|wc -l`
         if [ $res -eq 1 ]
         then
             echo "Start successfully."
@@ -71,17 +81,17 @@ wait_for_milvus_running() {
 }
 
 start() {
-    res=`docker ps|grep milvus-standalone|grep healthy|wc -l`
+    res=`podman ps|grep milvus-standalone|grep healthy|wc -l`
     if [ $res -eq 1 ]
     then
         echo "Milvus is running."
         exit 0
     fi
 
-    res=`docker ps -a|grep milvus-standalone|wc -l`
+    res=`podman ps -a|grep milvus-standalone|wc -l`
     if [ $res -eq 1 ]
     then
-        docker start milvus-standalone 1> /dev/null
+        podman start milvus-standalone 1> /dev/null
     else
         run_embed
     fi
@@ -96,7 +106,7 @@ start() {
 }
 
 stop() {
-    docker stop milvus-standalone 1> /dev/null
+    podman stop milvus-standalone 1> /dev/null
 
     if [ $? -ne 0 ]
     then
@@ -108,14 +118,13 @@ stop() {
 }
 
 delete_container() {
-    stop
-    res=`docker ps|grep milvus-standalone|wc -l`
+    res=`podman ps|grep milvus-standalone|wc -l`
     if [ $res -eq 1 ]
     then
         echo "Please stop Milvus service before delete."
         exit 1
     fi
-    docker rm milvus-standalone 1> /dev/null
+    podman rm milvus-standalone 1> /dev/null
     if [ $? -ne 0 ]
     then
         echo "Delete milvus container failed."
@@ -135,7 +144,7 @@ delete() {
 upgrade() {
     read -p "Please confirm if you'd like to proceed with the upgrade. The default will be to the latest version. Confirm with 'y' for yes or 'n' for no. > " check
     if [ "$check" == "y" ] ||[ "$check" == "Y" ];then
-        res=`docker ps -a|grep milvus-standalone|wc -l`
+        res=`podman ps -a|grep milvus-standalone|wc -l`
         if [ $res -eq 1 ]
         then
             stop
@@ -168,10 +177,7 @@ case $1 in
     delete)
         delete
         ;;
-    delete_container)
-        delete_container
-        ;;
     *)
-        echo "please use bash standalone_embed.sh restart|start|stop|upgrade|delete_container|delete"
+        echo "please use bash standalone_embed.sh restart|start|stop|upgrade|delete"
         ;;
 esac
