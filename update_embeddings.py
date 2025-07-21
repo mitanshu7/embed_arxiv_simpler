@@ -33,7 +33,7 @@ start = time()
 year = int(datetime.now().year)
 
 # Flag to force download and conversion even if files already exist
-FORCE = True
+FORCE = False
 
 # Flag to embed the data locally, otherwise it will use mxbai api to embed
 LOCAL = True
@@ -194,7 +194,7 @@ repo_type = "dataset"
 os.makedirs(local_dir, exist_ok=True)
 
 # Download the repo
-snapshot_download(repo_id=repo_id, repo_type=repo_type, local_dir=local_dir, allow_patterns=allow_patterns)
+snapshot_download(repo_id=repo_id, repo_type=repo_type, local_dir=local_dir, allow_patterns=allow_patterns, revision='77d3ac9')
 
 try:
 
@@ -232,7 +232,18 @@ if num_new_papers == 0:
 
 # Create a column for embeddings
 print(f"Creating new embeddings for: {num_new_papers} entries")
-new_papers["vector"] = new_papers["abstract"].progress_apply(embed)
+new_papers["vector"] = model.encode(
+    new_papers["abstract"].tolist(),
+    batch_size=120,
+    show_progress_bar=True,
+    convert_to_numpy=True,
+    precision='float32'
+).tolist()
+
+# Convert lists back to numpy arrays with the correct dtype
+new_papers["vector"] = new_papers["vector"].apply(
+    lambda x: np.array(x, dtype=np.float32)
+)
 
 ####################
 print("Adding url and month columns")
