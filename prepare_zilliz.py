@@ -6,6 +6,8 @@ import os
 from pymilvus.stage.stage_operation import StageOperation
 from pymilvus import MilvusClient, DataType
 from huggingface_hub import snapshot_download
+from glob import glob
+from tqdm import tqdm
 ################################################################################
 # Configuration
 load_dotenv(".env")
@@ -156,8 +158,13 @@ allow_patterns = "*.parquet"
 
 dataset_dir = snapshot_download(repo_id=repo_id, repo_type=repo_type, local_dir=local_dir, allow_patterns=allow_patterns)
 print(f"Dataset downloaded at {dataset_dir}")
-print(f"Modifying dataset directory from '{dataset_dir}' to '{dataset_dir}/data' to only upload parquet files and not the 'data' folder")
-dataset_dir = f"{dataset_dir}/data"
+
+# print(f"Modifying dataset directory from '{dataset_dir}' to '{dataset_dir}/data' to only upload parquet files and not the 'data' folder")
+# dataset_dir = f"{dataset_dir}/data"
+
+dataset_files = glob(f"{dataset_dir}/data/*.parquet")
+dataset_files.sort()
+print(f"Found {len(dataset_files)}!")
 print('*'*80)
 ################################################################################
 # Setup zilliz stage
@@ -229,9 +236,12 @@ def upload_to_stage(local_dir_or_file_path:str):
     return result
 
 # Upload to stage
-print(f"Uploading: {dataset_dir}")
-upload_result = upload_to_stage(dataset_dir)
-print(upload_result)
+for dataset_file in tqdm(dataset_files):
+    
+    print(f"Uploading: {dataset_file}")
+    upload_result = upload_to_stage(dataset_file)
+    print(upload_result)
+    
 print('*'*80)
 ########################################
 
