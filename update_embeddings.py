@@ -33,7 +33,7 @@ start = time()
 year = int(datetime.now().year)
 
 # Flag to force download and conversion even if files already exist
-FORCE = False
+FORCE = True
 
 # Flag to embed the data locally, otherwise it will use mxbai api to embed
 LOCAL = True
@@ -194,7 +194,7 @@ repo_type = "dataset"
 os.makedirs(local_dir, exist_ok=True)
 
 # Download the repo
-snapshot_download(repo_id=repo_id, repo_type=repo_type, local_dir=local_dir, allow_patterns=allow_patterns, revision='77d3ac9')
+snapshot_download(repo_id=repo_id, repo_type=repo_type, local_dir=local_dir, allow_patterns=allow_patterns)
 
 try:
 
