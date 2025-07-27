@@ -149,8 +149,13 @@ print(res)
 print("!"*80)
 ################################################################################
 # Download the dataset
-dataset_dir = snapshot_download(repo_id="bluuebunny/arxiv_abstract_embedding_mxbai_large_v1_milvus_binary", repo_type='dataset')
+repo_id = "bluuebunny/arxiv_abstract_embedding_mxbai_large_v1_milvus_binary"
+repo_type = "dataset"
+local_dir = "volumes/milvus"
+allow_patterns = "*.parquet"
 
+dataset_dir = snapshot_download(repo_id=repo_id, repo_type=repo_type, local_dir=local_dir, allow_patterns=allow_patterns)
+print(f"Dataset downloaded at {dataset_dir}")
 ################################################################################
 # Setup zilliz stage
 # Create a stage. https://docs.zilliz.com/docs/manage-stages#create-a-stage
