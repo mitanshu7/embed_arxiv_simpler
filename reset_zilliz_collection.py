@@ -8,14 +8,14 @@ import os
 load_dotenv(".env")
 
 CLUSTER_ENDPOINT = os.getenv('CLUSTER_ENDPOINT')
-TOKEN = os.getenv('TOKEN')
+ZILLIZ_TOKEN = os.getenv('ZILLIZ_TOKEN')
 COLLECTION_NAME = os.getenv('COLLECTION_NAME')
 
 # Initialize a MilvusClient instance
 # Replace uri and token with your own
 client = MilvusClient(
     uri=CLUSTER_ENDPOINT, # Cluster endpoint obtained from the console
-    token=TOKEN # API key or a colon-separated cluster username and password
+    token=ZILLIZ_TOKEN # API key or a colon-separated cluster username and password
 )
 
 ################################################################################

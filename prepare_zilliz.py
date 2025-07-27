@@ -9,7 +9,7 @@ from pymilvus.stage.stage_operation import StageOperation
 load_dotenv(".env")
 
 CLUSTER_ENDPOINT = os.getenv('CLUSTER_ENDPOINT')
-TOKEN = os.getenv('TOKEN')
+ZILLIZ_TOKEN = os.getenv('ZILLIZ_TOKEN')
 COLLECTION_NAME = os.getenv('COLLECTION_NAME')
 CLUSTER_ID = os.getenv('CLUSTER_ID')
 ZILLIZ_API_KEY = os.getenv('ZILLIZ_API_KEY')
@@ -23,7 +23,7 @@ BASE_URL = os.getenv('BASE_URL')
 print('='*80)
 print("Configuration:")
 print(f"CLUSTER_ENDPOINT {CLUSTER_ENDPOINT}")
-print(f"TOKEN {TOKEN}")
+print(f"ZILLIZ_TOKEN {ZILLIZ_TOKEN}")
 print(f"COLLECTION_NAME {COLLECTION_NAME}")
 print(f"CLUSTER_ID {CLUSTER_ID}")
 print(f"ZILLIZ_API_KEY {ZILLIZ_API_KEY}")
@@ -90,7 +90,7 @@ def import_from_stage():
 if __name__ == '__main__':
     
     # Gather files
-    file = "bluuebunny/arxiv_abstract_embedding_mxbai_large_v1_milvus_binary/data/1991.parquet"
+    file = "/home/mitanshu/Downloads/zilliz/bluuebunny/arxiv_abstract_embedding_mxbai_large_v1_milvus_binary/data/1991.parquet"
     
     # Create a stage 
     print(f"Creating stage: {STAGE_NAME}")
