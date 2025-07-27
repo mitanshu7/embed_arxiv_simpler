@@ -156,8 +156,34 @@ allow_patterns = "*.parquet"
 
 dataset_dir = snapshot_download(repo_id=repo_id, repo_type=repo_type, local_dir=local_dir, allow_patterns=allow_patterns)
 print(f"Dataset downloaded at {dataset_dir}")
+print(f"Modifying dataset directory from '{dataset_dir}' to '{dataset_dir}/data' to only upload parquet files and not the 'data' folder")
+dataset_dir = f"{dataset_dir}/data"
+print('*'*80)
 ################################################################################
 # Setup zilliz stage
+# Delete a stage. https://docs.zilliz.com/docs/manage-stages#delete-a-stage
+print("!"*80)
+def delete_stage():
+    
+    headers = {'Authorization': f'Bearer {ZILLIZ_API_KEY}',
+                'Content-Type': 'application/json'}
+    try:
+        response = requests.delete(f"{BASE_URL}/v2/stages/{STAGE_NAME}", headers=headers)
+        response.raise_for_status()  # Raises HTTPError for 4xx/5xx responses
+        return response.json()
+        
+    except requests.exceptions.HTTPError as http_err:
+        print(f"HTTP error occurred: {http_err} - {response.text}")
+        
+    except Exception as err:
+        print(f"Unexpected error: {err}")
+
+# Create a stage 
+print(f"Deleting stage: {STAGE_NAME}")
+delete_stage_result = delete_stage()
+print(delete_stage_result)
+print("!"*80)
+########################################
 # Create a stage. https://docs.zilliz.com/docs/manage-stages#create-a-stage
 def create_stage():
     
@@ -183,8 +209,8 @@ def create_stage():
 
 # Create a stage 
 print(f"Creating stage: {STAGE_NAME}")
-stage_result = create_stage()
-print(stage_result)
+create_stage_result = create_stage()
+print(create_stage_result)
 print('*'*80)
 ########################################
 
@@ -219,7 +245,7 @@ def import_from_stage():
         collection_name=COLLECTION_NAME,
         stage_name=STAGE_NAME,
         data_paths=[[STAGE_PATH]],
-        db_name='' # NEED TO KEEP EMPTY
+        db_name='' # NEED TO KEEP EMPTY to avoid cluster collection not found error.
     )
     
     return response.json()
