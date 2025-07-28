@@ -164,7 +164,7 @@ print(f"Dataset downloaded at {dataset_dir}")
 
 dataset_files = glob(f"{dataset_dir}/data/*.parquet")
 dataset_files.sort()
-print(f"Found {len(dataset_files)}!")
+print(f"Found {len(dataset_files)} files!")
 print('*'*80)
 ################################################################################
 # Setup zilliz stage
@@ -236,7 +236,7 @@ def upload_to_stage(local_dir_or_file_path:str):
     return result
 
 # Upload to stage
-for dataset_file in tqdm(dataset_files):
+for dataset_file in tqdm(dataset_files, desc="Uploading"):
     
     print(f"Uploading: {dataset_file}")
     upload_result = upload_to_stage(dataset_file)
@@ -246,7 +246,7 @@ print('*'*80)
 ########################################
 
 # Import data into collection via stage. https://docs.zilliz.com/docs/import-data-via-sdks#import-data-via-stage
-def import_from_stage():
+def import_from_stage(data_file:str):
 
     response = bulk_import(
         url=BASE_URL,
@@ -254,14 +254,23 @@ def import_from_stage():
         cluster_id=CLUSTER_ID,
         collection_name=COLLECTION_NAME,
         stage_name=STAGE_NAME,
-        data_paths=[[STAGE_PATH]],
-        db_name='' # NEED TO KEEP EMPTY to avoid cluster collection not found error.
+        data_paths=[[f"{STAGE_PATH}{data_file}"]], # Dont add a '/' in between since STAGE_PATH already ends with '/'
+        db_name='' # NEED to keep empty to avoid cluster collection not found error.
     )
     
     return response.json()
     
 # Import to collection
 print(f"Importing data from '{STAGE_NAME}/{STAGE_PATH}' to '{COLLECTION_NAME}'")
-import_result = import_from_stage()
-print(import_result)
-print('*'*80)    
+
+for dataset_file in tqdm(dataset_files, desc="Importing"):
+    
+    # Get filename for reference
+    dataset_file = os.path.basename(dataset_file)
+    
+    print(f"Importing: {dataset_file}")
+    
+    # import a single file
+    import_result = import_from_stage(dataset_file)
+    
+    print(import_result)
