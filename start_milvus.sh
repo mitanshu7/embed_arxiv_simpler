@@ -44,7 +44,7 @@ EOF
     fi
     
     podman run -d \
-        --name milvus-standalone \
+        --name milvus-standalone-papermatch \
         --security-opt seccomp:unconfined \
         -e ETCD_USE_EMBED=true \
         -e ETCD_DATA_DIR=/var/lib/milvus/etcd \
@@ -61,7 +61,7 @@ EOF
         --health-start-period=90s \
         --health-timeout=20s \
         --health-retries=3 \
-        docker.io/milvusdb/milvus:v2.5.14 \
+        docker.io/milvusdb/milvus:v2.5.15 \
         milvus run standalone  1> /dev/null
 }
 
