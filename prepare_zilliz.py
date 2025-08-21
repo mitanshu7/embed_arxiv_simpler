@@ -8,6 +8,8 @@ from pymilvus import MilvusClient, DataType
 from huggingface_hub import snapshot_download
 from glob import glob
 from tqdm import tqdm
+from pymilvus.exceptions import MilvusException
+import backoff
 ################################################################################
 # Configuration
 load_dotenv(".env")
@@ -198,7 +200,7 @@ create_stage_result = create_stage()
 print(create_stage_result)
 print('*'*80)
 ########################################
-
+@backoff.on_exception(backoff.expo, MilvusException, max_tries=5)
 # Upload data to stage. https://docs.zilliz.com/docs/manage-stages#upload-data-into-a-stage
 def upload_to_stage(local_dir_or_file_path:str):
     
