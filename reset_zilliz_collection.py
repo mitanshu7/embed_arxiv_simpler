@@ -2,14 +2,27 @@
 from pymilvus import MilvusClient, DataType
 from dotenv import load_dotenv
 import os
-
+import requests
 ################################################################################
 # Configuration
 load_dotenv(".env")
 
+#CLUSTER_ENDPOINT = os.getenv('CLUSTER_ENDPOINT')
+#ZILLIZ_TOKEN = os.getenv('ZILLIZ_TOKEN')
+#COLLECTION_NAME = os.getenv('COLLECTION_NAME')
+
 CLUSTER_ENDPOINT = os.getenv('CLUSTER_ENDPOINT')
 ZILLIZ_TOKEN = os.getenv('ZILLIZ_TOKEN')
-COLLECTION_NAME = os.getenv('COLLECTION_NAME')
+COLLECTION_NAME = os.getenv('COLLECTION_NAME', "default_collection")
+CLUSTER_ID = os.getenv('CLUSTER_ID')
+ZILLIZ_API_KEY = os.getenv('ZILLIZ_API_KEY')
+STAGE_NAME= os.getenv('STAGE_NAME', "default_stage")
+STAGE_PATH= os.getenv('STAGE_PATH',"default_stage_path")
+PROJECT_ID = os.getenv('PROJECT_ID')
+CLOUD_REGION = os.getenv('CLOUD_REGION')
+BASE_URL = os.getenv('BASE_URL')
+INDEX_NAME = os.getenv('INDEX_NAME', 'default_index')
+
 
 # Initialize a MilvusClient instance
 # Replace uri and token with your own
@@ -116,3 +129,27 @@ res = client.get_load_state(
 
 print("Collection load state:")
 print(res)
+
+################################################################################
+
+# Delete a stage. https://docs.zilliz.com/docs/manage-stages#delete-a-stage
+print("!"*80)
+def delete_stage():
+    
+    headers = {'Authorization': f'Bearer {ZILLIZ_API_KEY}',
+                'Content-Type': 'application/json'}
+    try:
+        response = requests.delete(f"{BASE_URL}/v2/stages/{STAGE_NAME}", headers=headers)
+        response.raise_for_status()  # Raises HTTPError for 4xx/5xx responses
+        return response.json()
+        
+    except requests.exceptions.HTTPError as http_err:
+        print(f"HTTP error occurred: {http_err} - {response.text}")
+        
+    except Exception as err:
+        print(f"Unexpected error: {err}")
+
+# Create a stage 
+print(f"Deleting stage: {STAGE_NAME}")
+delete_stage_result = delete_stage()
+print(delete_stage_result)
