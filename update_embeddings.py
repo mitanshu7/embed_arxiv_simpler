@@ -234,7 +234,7 @@ if num_new_papers == 0:
 print(f"Creating new embeddings for: {num_new_papers} entries")
 new_papers["vector"] = model.encode(
     new_papers["abstract"].tolist(),
-    batch_size=120,
+    batch_size=64,
     show_progress_bar=True,
     convert_to_numpy=True,
     precision='float32'
