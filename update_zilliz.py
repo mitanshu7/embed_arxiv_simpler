@@ -8,6 +8,7 @@ from pymilvus import MilvusClient, DataType
 from huggingface_hub import snapshot_download
 from glob import glob
 from tqdm import tqdm
+from datetime import datetime
 ################################################################################
 # Configuration
 load_dotenv(".env")
@@ -42,7 +43,6 @@ print('='*80)
 # Reset zilliz
 print("!"*80)
 print("Initiating MilvusClient, StageManager, and StageFileManager")
-
 # Initialize a MilvusClient instance
 # Replace uri and token with your own
 client = MilvusClient(
@@ -163,6 +163,9 @@ print(res)
 print("!"*80)
 ################################################################################
 # Download the dataset
+
+current_year = datetime.now().year
+
 repo_id = "bluuebunny/arxiv_abstract_embedding_mxbai_large_v1_milvus_binary"
 repo_type = "dataset"
 local_dir = "volumes/milvus"
@@ -171,34 +174,24 @@ allow_patterns = "*.parquet"
 dataset_dir = snapshot_download(repo_id=repo_id, repo_type=repo_type, local_dir=local_dir, allow_patterns=allow_patterns)
 print(f"Dataset downloaded at {dataset_dir}")
 
-# print(f"Modifying dataset directory from '{dataset_dir}' to '{dataset_dir}/data' to only upload parquet files and not the 'data' folder")
-# dataset_dir = f"{dataset_dir}/data"
-
 dataset_files = glob(f"{dataset_dir}/data/*.parquet")
 dataset_files.sort()
-print(f"Found {len(dataset_files)} files!")
+
+# Get the update file
+update_file = f"{dataset_dir}/data/{current_year}.parquet"
+print(f"Using {update_file} for update")
 print('*'*80)
 ################################################################################
 # Setup zilliz stage
-########################################
-# Create a stage. https://docs.zilliz.com/docs/manage-stages#create-a-stage
-print(f"Creating stage: {STAGE_NAME}")
-stage_manager.create_stage(
-    project_id=PROJECT_ID, 
-    region_id=CLOUD_REGION, 
-    stage_name=STAGE_NAME
-)
-print('*'*80)
-########################################
+
 # Upload data to stage. https://docs.zilliz.com/docs/manage-stages#upload-data-into-a-stage
-for dataset_file in tqdm(dataset_files, desc="Uploading"):
     
-    print(f"Uploading: {dataset_file}")
-    upload_result = stage_file_manager.upload_file_to_stage(
-        source_file_path=dataset_file, 
-        target_stage_path=STAGE_PATH
+print(f"Uploading: {update_file}")
+upload_result = stage_file_manager.upload_file_to_stage(
+    source_file_path=update_file, 
+    target_stage_path=STAGE_PATH
     )
-    print(upload_result)
+print(upload_result)
     
 print('*'*80)
 ########################################
