@@ -1,15 +1,13 @@
 # Connect using a MilvusClient object
 from pymilvus.bulk_writer import bulk_import
-import requests
+from pymilvus.bulk_writer.stage_manager import StageManager
+from pymilvus.bulk_writer.stage_file_manager import StageFileManager
 from dotenv import load_dotenv
 import os
-from pymilvus.stage.stage_operation import StageOperation
 from pymilvus import MilvusClient, DataType
 from huggingface_hub import snapshot_download
 from glob import glob
 from tqdm import tqdm
-from pymilvus.exceptions import MilvusException
-import backoff
 ################################################################################
 # Configuration
 load_dotenv(".env")
@@ -49,6 +47,17 @@ print("!"*80)
 client = MilvusClient(
     uri=CLUSTER_ENDPOINT, # Cluster endpoint obtained from the console
     token=ZILLIZ_TOKEN # API key or a colon-separated cluster username and password
+)
+
+stage_manager = StageManager(
+    cloud_endpoint=BASE_URL,
+    api_key=ZILLIZ_API_KEY
+)
+
+stage_file_manager = StageFileManager(
+    cloud_endpoint=BASE_URL,
+    api_key=ZILLIZ_API_KEY,
+    stage_name=STAGE_NAME,
 )
 
 ########################################
@@ -172,54 +181,22 @@ print('*'*80)
 # Setup zilliz stage
 ########################################
 # Create a stage. https://docs.zilliz.com/docs/manage-stages#create-a-stage
-def create_stage():
-    
-    headers = {'Authorization': f'Bearer {ZILLIZ_API_KEY}',
-                'Content-Type': 'application/json'}
-    
-    data = {
-        "projectId": PROJECT_ID,
-        "regionId": CLOUD_REGION,
-        "stageName": STAGE_NAME
-    }
-    
-    try:
-        response = requests.post(f"{BASE_URL}/v2/stages/create", headers=headers, json=data)
-        response.raise_for_status()  # Raises HTTPError for 4xx/5xx responses
-        return response.json()
-        
-    except requests.exceptions.HTTPError as http_err:
-        print(f"HTTP error occurred: {http_err} - {response.text}")
-        
-    except Exception as err:
-        print(f"Unexpected error: {err}")
-
-# Create a stage 
 print(f"Creating stage: {STAGE_NAME}")
-create_stage_result = create_stage()
-print(create_stage_result)
+stage_manager.create_stage(
+    project_id=PROJECT_ID, 
+    region_id=CLOUD_REGION, 
+    stage_name=STAGE_NAME
+)
 print('*'*80)
 ########################################
-@backoff.on_exception(backoff.expo, MilvusException, max_tries=5)
 # Upload data to stage. https://docs.zilliz.com/docs/manage-stages#upload-data-into-a-stage
-def upload_to_stage(local_dir_or_file_path:str):
-    
-    stage_operation = StageOperation(
-        cloud_endpoint=BASE_URL,
-        api_key=ZILLIZ_API_KEY,
-        stage_name=STAGE_NAME,
-        path=STAGE_PATH
-    )
-    
-    result = stage_operation.upload_file_to_stage(local_dir_or_file_path)
-    
-    return result
-
-# Upload to stage
 for dataset_file in tqdm(dataset_files, desc="Uploading"):
     
     print(f"Uploading: {dataset_file}")
-    upload_result = upload_to_stage(dataset_file)
+    upload_result = stage_file_manager.upload_file_to_stage(
+        source_file_path=dataset_file, 
+        target_stage_path=STAGE_PATH
+    )
     print(upload_result)
     
 print('*'*80)
@@ -257,25 +234,3 @@ for dataset_file in tqdm(dataset_files, desc="Importing"):
     
 ########################################
 
-# Delete a stage. https://docs.zilliz.com/docs/manage-stages#delete-a-stage
-print("!"*80)
-def delete_stage():
-    
-    headers = {'Authorization': f'Bearer {ZILLIZ_API_KEY}',
-                'Content-Type': 'application/json'}
-    try:
-        response = requests.delete(f"{BASE_URL}/v2/stages/{STAGE_NAME}", headers=headers)
-        response.raise_for_status()  # Raises HTTPError for 4xx/5xx responses
-        return response.json()
-        
-    except requests.exceptions.HTTPError as http_err:
-        print(f"HTTP error occurred: {http_err} - {response.text}")
-        
-    except Exception as err:
-        print(f"Unexpected error: {err}")
-
-# Create a stage 
-print(f"Deleting stage: {STAGE_NAME}")
-delete_stage_result = delete_stage()
-print(delete_stage_result)
-print("!"*80)
