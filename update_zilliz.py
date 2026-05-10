@@ -104,6 +104,7 @@ client.create_collection(
 # Set up the index parameters
 index_params = MilvusClient.prepare_index_params()
 
+# Create an index on the dense vector field to enable similarity search
 index_params.add_index(
         field_name="vector",
         metric_type="HAMMING",
@@ -111,6 +112,17 @@ index_params.add_index(
         index_name=INDEX_NAME,
         params={ "nlist": 128 }
     )
+
+# Create an ngram index on categories to accelerate LIKE filtering
+# https://milvus.io/docs/ngram.md#NGRAM
+
+index_params.add_index(
+    field_name="categories",   # Target VARCHAR field
+    index_type="NGRAM",           # Index type is NGRAM
+    index_name="ngram_index",     # Custom name for the index
+    min_gram=2,                   # Minimum substring length (e.g., 2-gram: "st")
+    max_gram=3                    # Maximum substring length (e.g., 3-gram: "sta")
+)
 
 print("Creating Index file.")
 
