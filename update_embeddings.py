@@ -358,7 +358,20 @@ if BINARY:
     new_embeddings['vector'] = new_embeddings['vector'].progress_apply(dense_to_binary)
 
     # Save the binary embeddings to a parquet file
-    new_embeddings.to_parquet(f'{binary_folder}/{year}.parquet', index=False)
+    features = Features(
+        {
+            "id": Value("string"),
+            "vector": Value("binary"),
+            "title": Value("string"),
+            "abstract": Value("string"),
+            "authors": Value("string"),
+            "categories": Value("string"),
+            "month": Value("string"),
+            "year": Value("int64"),
+            "url": Value("string"),
+        }
+    )
+    new_embeddings.to_parquet(f'{binary_folder}/{year}.parquet', index=False, features=features)
 
 if BINARY and UPLOAD:
 
