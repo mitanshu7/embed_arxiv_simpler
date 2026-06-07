@@ -4,7 +4,7 @@
 ## Requires the Kaggle API to be installed
 ## Using subprocess to run the Kaggle CLI commands instead of Kaggle API
 ## As it allows for anonymous downloads without needing to sign in
-from datasets import load_dataset # To load dataset without breaking ram
+from datasets import load_dataset, Features, List, Value # To load dataset without breaking ram
 from multiprocessing import cpu_count # To get the number of cores
 from sentence_transformers import SentenceTransformer # For embedding the text
 import torch # For gpu 
@@ -68,6 +68,20 @@ config = dotenv_values(".env")
 
 def is_running_in_huggingface_space():
     return "SPACE_ID" in os.environ
+
+features = Features(
+    {
+        "id": Value("string"),
+        "vector": List(Value("float32")),
+        "title": Value("string"),
+        "abstract": Value("string"),
+        "authors": Value("string"),
+        "categories": Value("string"),
+        "month": Value("string"),
+        "year": Value("int64"),
+        "url": Value("string"),
+    }
+)
 
 ################################################################################
 # Download the dataset
@@ -299,7 +313,7 @@ embed_filename = f'{embed_folder}/{year}.parquet'
 print(f"Saving newly embedded dataframe to: {embed_filename}")
 # Keeping index=False to avoid saving the index column as a separate column in the parquet file
 # This keeps milvus from throwing an error when importing the parquet file
-new_embeddings.to_parquet(embed_filename, index=False)
+new_embeddings.to_parquet(embed_filename, index=False, features=features)
 
 ################################################################################
 
