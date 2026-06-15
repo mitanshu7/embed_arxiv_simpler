@@ -22,6 +22,7 @@ import datetime # get current year
 from time import time, sleep # To time the script
 from datetime import datetime # To get the current date and time
 import kagglehub # To download the dataset from Kaggle
+import pyarrow as pa
 
 # Start timer
 start = time()
@@ -69,17 +70,23 @@ config = dotenv_values(".env")
 def is_running_in_huggingface_space():
     return "SPACE_ID" in os.environ
 
+# Define features for the arXiv dataset
 features = Features(
     {
-        "id": Value("string"),
-        "vector": List(Value("float32")),
-        "title": Value("string"),
-        "abstract": Value("string"),
-        "authors": Value("string"),
-        "categories": Value("string"),
-        "month": Value("string"),
-        "year": Value("int64"),
-        "url": Value("string"),
+      "id": Value("string"),
+      "submitter": Value("string"),
+      "authors": Value("string"),
+      "title": Value("string"),
+      "comments": Value("string"),
+      "journal-ref": Value("string"),
+      "doi": Value("string"),
+      "report-no": Value("string"),
+      "categories": Value("string"),
+      "license": Value("string"),
+      "abstract": Value("string"),
+      "versions": List({"version": Value("string"), "created":Value("string")}),
+      "update_date": Value("string"),
+      "authors_parsed": List(List(Value("string")))
     }
 )
 
@@ -101,12 +108,12 @@ download_file = f'{download_folder}/arxiv-metadata-oai-snapshot.json'
 # https://huggingface.co/docs/datasets/en/about_arrow#memory-mapping
 # Load metadata
 print(f"Loading json metadata")
-dataset = load_dataset("json", data_files= str(f"{download_file}"))
+dataset = load_dataset("json", data_files= str(f"{download_file}"), split="train", features=features)
 
 # Split metadata by year
 # Convert to pandas
 print(f"Converting metadata into pandas")
-arxiv_metadata_all = dataset['train'].to_pandas()
+arxiv_metadata_all = dataset.to_pandas()
 
 ########################################
 # Function to extract year from arxiv id
@@ -272,6 +279,7 @@ new_papers['month'] = new_papers['id'].progress_apply(extract_month_year, what='
 print("Removing newline characters from title, authors, categories, abstract")
 
 # Remove newline characters from authors, title, abstract and categories columns
+
 new_papers['title'] = new_papers['title'].astype(str).str.replace('\n', ' ', regex=False)
 
 new_papers['authors'] = new_papers['authors'].astype(str).str.replace('\n', ' ', regex=False)
@@ -308,12 +316,25 @@ new_embeddings = pd.concat([previous_embeddings, new_papers[selected_columns]])
 embed_folder = f"{year}-diff-embed"
 os.makedirs(embed_folder, exist_ok=True)
 
+# https://pandas.pydata.org/docs/user_guide/pyarrow.html
+# Force columns to be their respective types
+# .astype(pd.ArrowDtype(pa.string()))
+print("Force columns to be their respective types")
+
+new_embeddings['id'] = new_embeddings['id'].astype(pd.ArrowDtype(pa.string()))
+new_embeddings['title'] = new_embeddings['title'].astype(pd.ArrowDtype(pa.string()))
+new_embeddings['abstract'] = new_embeddings['abstract'].astype(pd.ArrowDtype(pa.string()))
+new_embeddings['authors'] = new_embeddings['authors'].astype(pd.ArrowDtype(pa.string()))
+new_embeddings['categories'] = new_embeddings['categories'].astype(pd.ArrowDtype(pa.string()))
+new_embeddings['month'] = new_embeddings['month'].astype(pd.ArrowDtype(pa.string()))
+new_embeddings['url'] = new_embeddings['url'].astype(pd.ArrowDtype(pa.string()))
+
 # Save the embedded file
 embed_filename = f'{embed_folder}/{year}.parquet'
 print(f"Saving newly embedded dataframe to: {embed_filename}")
 # Keeping index=False to avoid saving the index column as a separate column in the parquet file
 # This keeps milvus from throwing an error when importing the parquet file
-new_embeddings.to_parquet(embed_filename, index=False, features=features)
+new_embeddings.to_parquet(embed_filename, index=False)
 
 ################################################################################
 
@@ -357,21 +378,7 @@ if BINARY:
     # Convert the dense vectors to binary vectors
     new_embeddings['vector'] = new_embeddings['vector'].progress_apply(dense_to_binary)
 
-    # Save the binary embeddings to a parquet file
-    features = Features(
-        {
-            "id": Value("string"),
-            "vector": Value("binary"),
-            "title": Value("string"),
-            "abstract": Value("string"),
-            "authors": Value("string"),
-            "categories": Value("string"),
-            "month": Value("string"),
-            "year": Value("int64"),
-            "url": Value("string"),
-        }
-    )
-    new_embeddings.to_parquet(f'{binary_folder}/{year}.parquet', index=False, features=features)
+    new_embeddings.to_parquet(f'{binary_folder}/{year}.parquet', index=False)
 
 if BINARY and UPLOAD:
 
