@@ -231,12 +231,12 @@ for dataset_file in tqdm(dataset_files, desc="Importing"):
     # Get filename for reference
     dataset_file = os.path.basename(dataset_file)
     
-    print(f"Importing: {dataset_file}")
+    # print(f"Importing: {dataset_file}")
     
     # import a single file
     import_result = import_from_stage(dataset_file)
     
-    print(import_result)
+    # print(import_result)
     
 ########################################
 
